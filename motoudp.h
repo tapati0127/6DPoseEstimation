@@ -66,7 +66,7 @@ public:
     QString tx_data;
     QUdpSocket* client;
     bool isDataReceive;
-    void ReceiveData();
+
     QByteArray* rx_file_buffer;
     QByteArray* tx_file_buffer;
 Q_SIGNAL
@@ -74,9 +74,13 @@ Q_SIGNAL
 Q_SIGNAL
     void transferAllData();
 Q_SIGNAL
-   void receiveError();
+    void receiveError();
 Q_SIGNAL
-   void transferError();
+    void transferError();
+Q_SIGNAL
+    void receivePosition(void* pos);
+Q_SLOT
+    void ReceiveData();
 private:
     QHostAddress _HostAddress;
     quint16 _port;

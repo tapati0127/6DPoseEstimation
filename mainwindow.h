@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include "camera.h"
 #include "pclviewer.h"
-
+#include "handeyecalibration.h"
 namespace Ui {
 class MainWindow;
 }
@@ -25,6 +25,7 @@ private:
     Ui::MainWindow *ui;
     Camera *camera;
     pclViewer *viewer;
+    HandEyeCalibration *calib;
 };
 
 #endif // MAINWINDOW_H

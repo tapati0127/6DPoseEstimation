@@ -105,12 +105,11 @@ struct MotoUDP::MotoUDP::TxDataWriteVariablePosition
   const int32_t seventh_axis_position = 0;
   const int32_t eighth_axis_position = 0;
 };
-
-
 bool MotoUDP::MotoUDP::ConnectMotoman()
 {
     client = new QUdpSocket;
     client->bind();
+    connect(client,&QUdpSocket::readyRead,this,&MotoUDP::MotoUDP::ReceiveData);
     return 1;
 }
 bool MotoUDP::MotoUDP::CloseMotoman()
@@ -125,7 +124,6 @@ QString MotoUDP::MotoUDP::SendCommand(QByteArray buffer)
     client->writeDatagram(buffer,buffer.length(),_HostAddress,_port);
     return ByteArray2Hex(buffer);
 }
-
 QString MotoUDP::MotoUDP::ByteArray2Hex(QByteArray buffer)
 {
     QString s;
@@ -146,7 +144,6 @@ QString MotoUDP::MotoUDP::ByteArray2Hex(QByteArray buffer)
     s = s.toUpper();
     return s;
 }
-
 QByteArray MotoUDP::MotoUDP::Hex2ByteArray (QString s)
 {
     QByteArray buffer;
@@ -166,7 +163,6 @@ QByteArray MotoUDP::MotoUDP::Hex2ByteArray (QString s)
     }
     return buffer;
 }
-
 QByteArray MotoUDP::MotoUDP::Int32ToByteArray (int32_t value)
 {
     QByteArray buffer;
@@ -382,11 +378,10 @@ void MotoUDP::MotoUDP::ReceiveData()
 {
     rx_buffer->resize(client->pendingDatagramSize());
     client->readDatagram(rx_buffer->data(),rx_buffer->size());
-
-   // qDebug() << rx_buffer->toHex();
     if(GetReceiveType() == GET_POSITION && rx_buffer->at(26)==0)
     {
       memcpy(current_position,rx_buffer->data()+52,24);
+      Q_EMIT receivePosition(current_position);
     }
     else if (GetReceiveType() == GET_PULSE && rx_buffer->at(26)==0) {
       memcpy(current_pulse,rx_buffer->data()+52,24);
@@ -459,7 +454,7 @@ void MotoUDP::MotoUDP::ReceiveData()
       client->writeDatagram(data,32+byte_number,_HostAddress,_port+1);
     }
     else if (GetReceiveType() == FILE_DELETE ) {
-    qDebug() << rx_buffer->toHex();
+    //qDebug() << rx_buffer->toHex();
     }
 
     //rx_data = ByteArray2Hex(*rx_buffer);
@@ -597,7 +592,6 @@ double MotoUDP::MotoUDP::Pulse2Joint(int32_t pulse, int i)
     return double(pulse)/PULSE_PER_DEGREE_RBT;
   }
 }
-
 std::vector<double> MotoUDP::MotoUDP::ByteArray2Joint(QByteArray *pulse_buffer)
 {
   std::vector<double> pulse;

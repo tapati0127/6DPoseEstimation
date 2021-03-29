@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.9.2, 2021-03-28T15:29:19. -->
+<!-- Written by QtCreator 4.9.2, 2021-03-29T15:03:06. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -119,14 +119,14 @@
      <value type="QString">OpenCV_DIR:PATH=/home/tapati/OpenCV/build-opencv-Desktop-Default</value>
      <value type="QString">QT_QMAKE_EXECUTABLE:STRING=%{Qt:qmakeExecutable}</value>
      <value type="QString">VISP_DIR:PATH=/home/tapati/ViSP/build</value>
-     <value type="QString">realsense2_DIR:PATH=/usr/local/lib/cmake/realsense2</value>
+     <value type="QString">realsense2_DIR:PATH=/home/tapati/librealsense/CMake</value>
     </valuelist>
     <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">/home/tapati/GUI/GUI/build-6DPoseEstimation-Desktop-Debug</value>
     <valuemap type="QVariantMap" key="ProjectExplorer.BuildConfiguration.BuildStepList.0">
      <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.0">
       <value type="QString" key="CMakeProjectManager.MakeStep.AdditionalArguments"></value>
       <valuelist type="QVariantList" key="CMakeProjectManager.MakeStep.BuildTargets">
-       <value type="QString">all</value>
+       <value type="QString">6DPoseEstimation</value>
       </valuelist>
       <value type="bool" key="ProjectExplorer.BuildStep.Enabled">true</value>
       <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">CMake Build</value>
@@ -371,6 +371,7 @@
     <value type="bool" key="RunConfiguration.UseMultiProcess">false</value>
     <value type="bool" key="RunConfiguration.UseQmlDebugger">false</value>
     <value type="bool" key="RunConfiguration.UseQmlDebuggerAuto">true</value>
+    <value type="bool" key="RunConfiguration.UseTerminal">true</value>
     <value type="QString" key="RunConfiguration.WorkingDirectory"></value>
     <value type="QString" key="RunConfiguration.WorkingDirectory.default">/home/tapati/GUI/GUI/build-6DPoseEstimation-Desktop-Debug</value>
    </valuemap>

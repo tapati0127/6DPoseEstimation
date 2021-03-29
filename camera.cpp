@@ -34,8 +34,8 @@ void Camera::run()
         uint8_t* ptr = (uint8_t*)rgb.get_data();
         int stride = rgb.as<rs2::video_frame>().get_stride_in_bytes();
         // Let's convert them to QImage
-        auto q_rgb = realsenseFrameToQImage(rgb);
-        auto q_depth = realsenseFrameToQImage(depth);
+        auto q_rgb = Convert::realsenseFrameToQImage(rgb);
+        auto q_depth = Convert::realsenseFrameToQImage(depth);
 
         // And finally we'll emit our signal
         emit framesReady(q_rgb, q_depth);
@@ -77,25 +77,3 @@ void Camera::run()
     }
 }
 
-QImage realsenseFrameToQImage(const rs2::frame &f)
-{
-    using namespace rs2;
-
-    auto vf = f.as<video_frame>();
-    const int w = vf.get_width();
-    const int h = vf.get_height();
-
-    if (f.get_profile().format() == RS2_FORMAT_RGB8)
-    {
-        auto r = QImage((uchar*) f.get_data(), w, h, w*3, QImage::Format_RGB888);
-        return r;
-    }
-    else if (f.get_profile().format() == RS2_FORMAT_Z16)
-    {
-        // only if you have Qt > 5.13
-        auto r = QImage((uchar*) f.get_data(), w, h, w*2, QImage::Format_Grayscale8);
-        return r;
-    }
-
-    throw std::runtime_error("Frame format is not supported yet!");
-}

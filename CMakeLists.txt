@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.1.0)
-
 project(6DPoseEstimation VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -39,5 +38,4 @@ add_executable(6DPoseEstimation
     convert.h
     #resources.qrc
 )
-
 target_link_libraries(6DPoseEstimation ${realsense2_LIBRARY} Qt5::Widgets Qt5::Network ${PCL_LIBRARIES} ${OpenCV_LIBS} ${VISP_LIBRARIES})

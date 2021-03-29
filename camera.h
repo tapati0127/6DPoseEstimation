@@ -10,6 +10,7 @@
 #include <pcl/point_types.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include "opencv2/core.hpp"
+#include "convert.h"
 // Let's define our camera as a thread, it will be constantly running and sending frames to
 // our main window
 
@@ -56,6 +57,4 @@ signals:
     void pclReady(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pointcloud);
     void pointCloudReady(cv::Mat pointcloud);
 };
-// A function that will convert realsense frames to QImage
-QImage realsenseFrameToQImage(const rs2::frame& f);
 #endif // CAMERA_H

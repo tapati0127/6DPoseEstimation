@@ -7,14 +7,17 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    /*
     camera = new Camera(848, 480, 848, 480, 30);
     connect(camera, &Camera::framesReady, this, &MainWindow::receiveFrame);
     connect(camera, &Camera::pclReady, this, &MainWindow::receivePcl);
     connect(camera, &Camera::pointCloudReady, this, &MainWindow::receivePointCloud);
-    camera->start();
+    camera->start();*/
     viewer = new pclViewer(ui->qvtkWidget);
     //viewer.display(ui->qvtkWidget);
-
+    calib = new HandEyeCalibration;
+    connect(calib, &HandEyeCalibration::framesReady, this, &MainWindow::receiveFrame);
+    calib->start();
 }
 
 MainWindow::~MainWindow()
