@@ -17,9 +17,11 @@ class pclViewer
 public:
     pclViewer();
     pclViewer(QVTKWidget* vtk);
+
     ~pclViewer(){};
     void display();
     void displayPCL(PointCloudT::Ptr pc);
+    void displayCoordiante(Eigen::Affine3f pose);
     bool isPclAdded = false;
 protected:
   pcl::visualization::PCLVisualizer::Ptr viewer;

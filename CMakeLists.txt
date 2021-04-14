@@ -12,7 +12,7 @@ if(CMAKE_VERSION VERSION_LESS "3.7.0")
     set(CMAKE_INCLUDE_CURRENT_DIR ON)
 endif()
 
-find_package(Qt5 COMPONENTS Widgets Core Network REQUIRED)
+find_package(Qt5 COMPONENTS Widgets Core Network SerialPort REQUIRED)
 find_package(VTK REQUIRED)
 find_package(PCL REQUIRED)
 find_package(realsense2 REQUIRED)
@@ -36,6 +36,9 @@ add_executable(6DPoseEstimation
     handeyecalibration.cpp
     motoudp.cpp
     convert.h
+    vpDisplay_impl.h
+    servocontrol.cpp
     #resources.qrc
 )
-target_link_libraries(6DPoseEstimation ${realsense2_LIBRARY} Qt5::Widgets Qt5::Network ${PCL_LIBRARIES} ${OpenCV_LIBS} ${VISP_LIBRARIES})
+#qt5_use_modules(6DPoseEstimation Core SerialPort)
+target_link_libraries(6DPoseEstimation ${realsense2_LIBRARY} Qt5::Widgets Qt5::Network Qt5::SerialPort ${PCL_LIBRARIES} ${OpenCV_LIBS} ${VISP_LIBRARIES})

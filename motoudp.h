@@ -2,8 +2,8 @@
 #define MOTOUDP_H
 
 #include <QUdpSocket>
-
-class MotoUDP : public QObject
+#include <QThread>
+class MotoUDP : public QThread
 {
 Q_OBJECT
 public:
@@ -26,81 +26,36 @@ public:
                         WRITE_BYTE
                        };
     ~MotoUDP();
-    bool SendData (char* buffer, int lenght);
+    void run();
     bool ConnectMotoman();
     bool CloseMotoman();
     bool TurnOnServo();
     bool TurnOffServo();
-    bool GetPosition();
-    bool GetPulsePosition();
-    bool GetVarPosition(u_int16_t index);
+    bool GetPosition(int32_t *pos);
+    bool GetPulsePosition(int32_t *pos);
+    bool GetVarPosition(u_int16_t index,int32_t* pos);
+    bool GetMultipleVarPosition(u_int16_t index,u_int32_t number, int32_t* pos);
     bool SelectJob(char* jobname);
     bool StartJob();
-    bool WritePosition(u_int16_t type,u_int32_t classification_in_speed, u_int32_t speed,int32_t* pos);
-    bool WritePulse(u_int16_t type,u_int32_t classification_in_speed, u_int32_t speed,int32_t* pos);
-    bool WriteVarPosition(u_int16_t index, std::vector<int32_t> pos);
-    bool FileTransmitCommand(char name[],int length);
-    bool FileReceiveCommand(char name[],int length);
-    bool FileDeleteCommand(char name[],int length);
-    bool GetJobFile(QString path);
-    bool JobFile2ByteArray(QString path);
+    bool WriteVarPosition(u_int16_t index, int32_t* pos);
+    bool WriteMultipleVarPosition(u_int16_t index,u_int32_t number, int32_t* pos);
     bool ConnectToPLC(QHostAddress host, u_int port,uint16_t adr,uint16_t no_reg,std::vector<uint16_t> data);
     bool WriteByte(u_int16_t instance, uint8_t data);
-    int32_t* GetCurrentPosition();
-    int32_t* GetCurrentPulse();
 
-    std::vector<double> ByteArray2Joint(QByteArray *pulse_buffer);
-    RECEIVE_TYPE GetReceiveType ();
-    bool CheckReceivedData(QByteArray buffer);
-    QByteArray SplitArray(QByteArray array,int start, int count);
-    int32_t Joint2Pulse(double joint, int i);
-    double Pulse2Joint(int32_t pulse, int i);
-
-    QByteArray* Get_rx_buffer();
-    QString SendCommand(QByteArray buffer);
-    QString ByteArray2Hex(QByteArray buffer);
-    QByteArray Hex2ByteArray (QString s);
-    QByteArray Int32ToByteArray (int32_t value);
-    int32_t ByteArray2Int32 (QByteArray* buffer,int start, int number);
-    QString rx_data;
-    QString tx_data;
-    QUdpSocket* client;
-    bool isDataReceive;
-
-    QByteArray* rx_file_buffer;
-    QByteArray* tx_file_buffer;
-Q_SIGNAL
-    void receiveAllData();
-Q_SIGNAL
-    void transferAllData();
-Q_SIGNAL
-    void receiveError();
-Q_SIGNAL
-    void transferError();
-Q_SIGNAL
-    void receivePosition(void* pos);
-Q_SLOT
-    void ReceiveData();
 private:
+    bool SendData (char* buffer, int lenght);
+    QUdpSocket* client;
     QHostAddress _HostAddress;
     quint16 _port;
-    QByteArray* rx_buffer;
-    u_int32_t previous;
-    u_int32_t index_file_transmit;
-    u_int32_t max_index_file_transmit;
-    u_int32_t last_byte_number;
-    bool last_data;
-    int32_t current_position[6];
-    int32_t current_pulse[6];
     static const double PULSE_PER_DEGREE_S;
     static const double PULSE_PER_DEGREE_L;
     static const double PULSE_PER_DEGREE_U;
     static const double PULSE_PER_DEGREE_RBT;
-    static const QString START_JOB;
     struct TxData;
     struct TxDataWritePosition;
     struct TxDataWritePulse;
     struct TxDataWriteVariablePosition;
+    struct RxData;
 };
 
 #endif // MOTOUDP_H

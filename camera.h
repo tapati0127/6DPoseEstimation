@@ -13,7 +13,6 @@
 #include "convert.h"
 // Let's define our camera as a thread, it will be constantly running and sending frames to
 // our main window
-
 Q_DECLARE_METATYPE(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr)
 Q_DECLARE_METATYPE(cv::Mat)
 class Camera : public QThread

@@ -29,15 +29,62 @@
        <attribute name="label">
         <string>2D VIEW</string>
        </attribute>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QPushButton" name="pushButton">
         <property name="geometry">
          <rect>
-          <x>9</x>
-          <y>9</y>
-          <width>532</width>
-          <height>325</height>
+          <x>60</x>
+          <y>360</y>
+          <width>141</width>
+          <height>41</height>
          </rect>
         </property>
+        <property name="text">
+         <string>GET POSE</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pushButton_2">
+        <property name="geometry">
+         <rect>
+          <x>220</x>
+          <y>360</y>
+          <width>171</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>START CALIBRATION</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pushButton_3">
+        <property name="geometry">
+         <rect>
+          <x>330</x>
+          <y>490</y>
+          <width>89</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Write</string>
+        </property>
+       </widget>
+       <widget class="QSpinBox" name="spinBox">
+        <property name="geometry">
+         <rect>
+          <x>150</x>
+          <y>460</y>
+          <width>101</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="minimum">
+         <number>0</number>
+        </property>
+        <property name="maximum">
+         <number>180</number>
+        </property>
+       </widget>
+       <widget class="QWidget" name="">
         <layout class="QVBoxLayout" name="verticalLayout">
          <item>
           <widget class="QLabel" name="label">
@@ -76,6 +123,28 @@
          </item>
         </layout>
        </widget>
+       <widget class="QVTKWidget" name="qvtkWidget" native="true">
+        <property name="geometry">
+         <rect>
+          <x>548</x>
+          <y>1</y>
+          <width>530</width>
+          <height>521</height>
+         </rect>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>530</width>
+          <height>300</height>
+         </size>
+        </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="widget">
        <property name="geometry">
@@ -89,24 +158,6 @@
        <attribute name="label">
         <string>3D VIEW</string>
        </attribute>
-       <layout class="QFormLayout" name="formLayout">
-        <item row="0" column="1">
-         <widget class="QVTKWidget" name="qvtkWidget" native="true">
-          <property name="minimumSize">
-           <size>
-            <width>530</width>
-            <height>300</height>
-           </size>
-          </property>
-          <property name="autoFillBackground">
-           <bool>false</bool>
-          </property>
-          <property name="styleSheet">
-           <string notr="true"/>
-          </property>
-         </widget>
-        </item>
-       </layout>
       </widget>
      </widget>
     </item>
@@ -154,21 +205,33 @@
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionConnect">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Connect</string>
    </property>
   </action>
   <action name="actionDisconnect">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Disconnect</string>
    </property>
   </action>
   <action name="actionConnect_2">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Connect</string>
    </property>
   </action>
   <action name="actionDisconnect_2">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Disconnect</string>
    </property>

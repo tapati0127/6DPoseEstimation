@@ -7,6 +7,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+
     /*
     camera = new Camera(848, 480, 848, 480, 30);
     connect(camera, &Camera::framesReady, this, &MainWindow::receiveFrame);
@@ -14,10 +16,17 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(camera, &Camera::pointCloudReady, this, &MainWindow::receivePointCloud);
     camera->start();*/
     viewer = new pclViewer(ui->qvtkWidget);
-    //viewer.display(ui->qvtkWidget);
+
     calib = new HandEyeCalibration;
     connect(calib, &HandEyeCalibration::framesReady, this, &MainWindow::receiveFrame);
-    calib->start();
+    connect(calib, &HandEyeCalibration::finishCalibrate, this, &MainWindow::addCoordinate);
+    //Realrun
+    //calib->start();
+    //Just Test
+    calib->test();
+
+    servo = new ServoControl();
+
 }
 
 MainWindow::~MainWindow()
@@ -41,4 +50,24 @@ void MainWindow::receivePcl(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pointcloud)
 void MainWindow::receivePointCloud(cv::Mat pointcloud)
 {
 
+}
+
+void MainWindow::addCoordinate(Eigen::Affine3f aswer)
+{
+    viewer->displayCoordiante(aswer);
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+    calib->startTrigger();
+}
+
+void MainWindow::on_pushButton_2_clicked()
+{
+    calib->caculatePose();
+}
+
+void MainWindow::on_pushButton_3_clicked()
+{
+    std::cout << "Result " << servo->WriteServo(ui->spinBox->value()) << std::endl;
 }

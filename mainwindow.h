@@ -5,6 +5,7 @@
 #include "camera.h"
 #include "pclviewer.h"
 #include "handeyecalibration.h"
+#include "servocontrol.h"
 namespace Ui {
 class MainWindow;
 }
@@ -21,11 +22,20 @@ public slots:
     void receiveFrame(QImage rgb, QImage depth);
     void receivePcl(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pointcloud);
     void receivePointCloud(cv::Mat pointcloud);
+    void addCoordinate(Eigen::Affine3f aswer);
+private slots:
+    void on_pushButton_clicked();
+
+    void on_pushButton_2_clicked();
+
+    void on_pushButton_3_clicked();
+
 private:
     Ui::MainWindow *ui;
     Camera *camera;
     pclViewer *viewer;
     HandEyeCalibration *calib;
+    ServoControl* servo;
 };
 
 #endif // MAINWINDOW_H

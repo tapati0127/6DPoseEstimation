@@ -2,6 +2,7 @@
 #define HANDEYECALIBRATION_H
 #include <QThread>
 #include <QImage>
+#include <QMetaType>
 #include <visp3/core/vpConfig.h>
 #include <visp3/sensor/vpRealSense2.h>
 #include <visp3/detection/vpDetectorAprilTag.h>
@@ -11,23 +12,40 @@
 #include <visp3/vision/vpPose.h>
 #include <librealsense2/rs.hpp> 
 #include "convert.h"
+#include "motoudp.h"
+Q_DECLARE_METATYPE(Eigen::Affine3f)
 
 class HandEyeCalibration: public QThread
 {
     Q_OBJECT
 public:
     HandEyeCalibration();
-    //static int startHandEyeCalibration();
-
     // Member function that handles thread iteration
     void run();
     // If called it will stop the thread
     void stop();
+    void startTrigger(){trigger=true;}
+    void receivedPosition(int32_t* pos);
+    void caculatePose();
+    void test();
 signals:
     // A signal sent by our class to notify that there are frames that need to be processed
     void framesReady(QImage frameRGB, QImage frameDepth);
+    void finishCalibrate(Eigen::Affine3f aswer);
 private:
-
+    bool trigger = false;
+    bool isReceivePositionFromRobot = false;
+    MotoUDP* motoudp;
+    std::vector<cv::Mat> R_base2gripper;
+    std::vector<vpHomogeneousMatrix> pose_base2gripper;
+    std::vector<cv::Mat> t_base2gripper;
+    std::vector<cv::Mat> R_target2cam;
+    std::vector<cv::Mat> t_target2cam;
+    std::vector<vpHomogeneousMatrix> pose_target2cam;
+    cv::Mat R_cam2base,t_cam2base;
+    vpHomogeneousMatrix pose_cam2base;
+    bool isSimulation = true;
+    cv::Mat R_base2cam_,t_base2cam_;
 };
 
 #endif // HANDEYECALIBRATION_H

@@ -34,6 +34,8 @@ pclViewer::pclViewer(QVTKWidget *vtk)
     vtk->SetRenderWindow (viewer->getRenderWindow ());
     viewer->setBackgroundColor(1,1,1);
     viewer->setupInteractor (vtk->GetInteractor (), vtk->GetRenderWindow());
+    viewer->addCoordinateSystem(0.1);
+    viewer->addText("base",0,0);
     vtk->update ();
 }
 
@@ -67,3 +69,11 @@ void pclViewer::displayPCL(PointCloudT::Ptr pc)
     }
 
 }
+
+void pclViewer::displayCoordiante(Eigen::Affine3f pose)
+{
+    viewer->addCoordinateSystem(0.1,pose,"camera",0);
+    vtk->update();
+}
+
+
