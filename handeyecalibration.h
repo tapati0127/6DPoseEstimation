@@ -19,12 +19,13 @@ class HandEyeCalibration: public QThread
 {
     Q_OBJECT
 public:
-    HandEyeCalibration();
+    HandEyeCalibration(const QString &ip);
     // Member function that handles thread iteration
     void run();
     // If called it will stop the thread
     void stop();
     void startTrigger(){trigger=true;}
+    void startSendPosition(){sendPosition=true;}
     void receivedPosition(int32_t* pos);
     void caculatePose();
     void test();
@@ -37,15 +38,23 @@ private:
     bool isReceivePositionFromRobot = false;
     MotoUDP* motoudp;
     std::vector<cv::Mat> R_base2gripper;
-    std::vector<vpHomogeneousMatrix> pose_base2gripper;
+    std::vector<vpHomogeneousMatrix> cMo;
     std::vector<cv::Mat> t_base2gripper;
     std::vector<cv::Mat> R_target2cam;
     std::vector<cv::Mat> t_target2cam;
-    std::vector<vpHomogeneousMatrix> pose_target2cam;
+    std::vector<vpHomogeneousMatrix> eMw;
     cv::Mat R_cam2base,t_cam2base;
-    vpHomogeneousMatrix pose_cam2base;
+    vpHomogeneousMatrix wMc;
     bool isSimulation = true;
-    cv::Mat R_base2cam_,t_base2cam_;
+    bool thread_stop=false;
+     vpRealSense2 g;
+    //cv::Mat R_base2cam_,t_base2cam_;
+
+    //
+    bool sendPosition = false;
+    //
+
+
 };
 
 #endif // HANDEYECALIBRATION_H

@@ -13,7 +13,7 @@ if(CMAKE_VERSION VERSION_LESS "3.7.0")
 endif()
 
 find_package(Qt5 COMPONENTS Widgets Core Network SerialPort REQUIRED)
-find_package(VTK REQUIRED)
+#find_package(VTK REQUIRED)
 find_package(PCL REQUIRED)
 find_package(realsense2 REQUIRED)
 find_package(OpenCV REQUIRED)

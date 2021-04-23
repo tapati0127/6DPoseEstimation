@@ -4,8 +4,11 @@
 #include <QThread>
 #include <QImage>
 #include <QMetaType>
+#include <QTimer>
 // Import librealsense header
 #include <librealsense2/rs.hpp>
+#include <librealsense2/rs_advanced_mode.hpp>
+#include <librealsense2/rsutil.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/visualization/pcl_visualizer.h>
@@ -20,19 +23,27 @@ class Camera : public QThread
     Q_OBJECT
 public:
     // We need to instantiate a camera with both depth and rgb resolution (as well as fps)
-    Camera(int rgb_width, int rgb_height, int depth_width, int depth_height, int fps);
-    ~Camera() {
-        pipe.stop();
-    }
+    Camera(int rgb_width, int rgb_height, int depth_width, int depth_height, int fps, std::string cameraFile);
+    ~Camera() {std::cout << "Camera Class off " << std::endl;}
 
     // Member function that handles thread iteration
     void run();
 
     // If called it will stop the thread
     void stop() {
-        pipe.stop();
-        camera_running = false; }
+        thread_stop = true;
+        this->wait(600);
+//        if(camera_running){
+//            camera_running = false;
+//            pipe.stop();
 
+//        }
+//        else {
+//            tm->stop();
+//        }
+//        this->terminate();
+//        this->wait(500);
+         }
 
 private:
     // Realsense configuration structure, it will define streams that need to be opened
@@ -45,15 +56,20 @@ private:
     rs2::frameset frames;
 
     // A bool that defines if our thread is running
-    bool camera_running = true;
+    bool camera_running = false;
+    bool thread_stop = false;
 
     cv::Mat cloud;
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pcl;
 
+    int rgb_width; int rgb_height; int depth_width; int depth_height; int fps; std::string cameraFile;
+    QTimer* tm;
 signals:
     // A signal sent by our class to notify that there are frames that need to be processed
     void framesReady(QImage frameRGB, QImage frameDepth);
     void pclReady(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pointcloud);
     void pointCloudReady(cv::Mat pointcloud);
+private slots:
+    void ConnectCamera();
 };
 #endif // CAMERA_H

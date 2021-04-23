@@ -6,6 +6,8 @@
 #include "opencv2/core.hpp"
 #include <librealsense2/rs.hpp>
 #include <opencv2/calib3d.hpp>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 
 #define CALIB_RADIANS 0
 #define CALIB_DEGREES 1
@@ -259,6 +261,18 @@ public:
       Matx34f P;
       hconcat(R, t, P);
       vconcat(P, Matx14f(0, 0, 0, 1), Pose);
+    }
+    static void mat2Pcl(const Mat& input, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pcl)
+    {
+        pcl->points.resize(input.rows);
+        for (int i=0;i<input.rows;i++) {
+            pcl->points.at(i).x =input.at<float>(i,0);
+            pcl->points.at(i).y =input.at<float>(i,1);
+            pcl->points.at(i).z =input.at<float>(i,2);
+            pcl->points.at(i).r =0;
+            pcl->points.at(i).g =0;
+            pcl->points.at(i).b =255;
+        }
     }
 
 

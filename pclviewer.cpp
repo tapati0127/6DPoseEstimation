@@ -34,9 +34,13 @@ pclViewer::pclViewer(QVTKWidget *vtk)
     vtk->SetRenderWindow (viewer->getRenderWindow ());
     viewer->setBackgroundColor(1,1,1);
     viewer->setupInteractor (vtk->GetInteractor (), vtk->GetRenderWindow());
-    viewer->addCoordinateSystem(0.1);
-    viewer->addText("base",0,0);
+    viewer->addCoordinateSystem(0.05,"base");
+    //pcl::PointXYZ point(0.0,0.0,0.0);
+    //viewer->addText3D("world",point);
+    //viewer->addText("base",0,0);
     vtk->update ();
+    //viewer->addText3D(std::string("world"),pcl::PointXYZ(0.0,0.0,0.0),1,1,0,0,"b");
+    //vtk->update ();
 }
 
 void pclViewer::display()
@@ -70,10 +74,20 @@ void pclViewer::displayPCL(PointCloudT::Ptr pc)
 
 }
 
+void pclViewer::displayPCLModel(PointCloudT::Ptr pc, std::string name)
+{
+    viewer->removeAllPointClouds();
+    viewer->addPointCloud (pc, name);
+    viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 4, name);
+    viewer->resetCamera();
+    vtk->update();
+}
+
 void pclViewer::displayCoordiante(Eigen::Affine3f pose)
 {
-    viewer->addCoordinateSystem(0.1,pose,"camera",0);
+    viewer->addCoordinateSystem(0.05,pose,"camera",0);
     vtk->update();
+    viewer->resetCamera();
 }
 
 
