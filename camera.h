@@ -33,18 +33,11 @@ public:
     void stop() {
         thread_stop = true;
         this->wait(600);
-//        if(camera_running){
-//            camera_running = false;
-//            pipe.stop();
-
-//        }
-//        else {
-//            tm->stop();
-//        }
-//        this->terminate();
-//        this->wait(500);
          }
-
+    void setMaxRange(const int&value){maxRange=value/1000.0;}
+    bool camera_running = false;
+signals:
+    void connected();
 private:
     // Realsense configuration structure, it will define streams that need to be opened
     rs2::config cfg;
@@ -56,9 +49,9 @@ private:
     rs2::frameset frames;
 
     // A bool that defines if our thread is running
-    bool camera_running = false;
-    bool thread_stop = false;
 
+    bool thread_stop = false;
+    double maxRange = 0.6;
     cv::Mat cloud;
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pcl;
 
@@ -71,5 +64,7 @@ signals:
     void pointCloudReady(cv::Mat pointcloud);
 private slots:
     void ConnectCamera();
+public slots:
+    void maxRangeChanged(int value);
 };
 #endif // CAMERA_H

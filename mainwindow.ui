@@ -53,7 +53,16 @@
              </size>
             </property>
             <property name="text">
-             <string>TextLabel</string>
+             <string>No Signal</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::AutoText</enum>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
             </property>
            </widget>
           </item>
@@ -105,9 +114,16 @@
                  <item>
                   <layout class="QHBoxLayout" name="horizontalLayout_22">
                    <item>
+                    <widget class="QPushButton" name="pushButtonGripperOpen">
+                     <property name="text">
+                      <string>Gripper Open</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
                     <widget class="QLabel" name="label_12">
                      <property name="text">
-                      <string>Gripper Open Width</string>
+                      <string> Width</string>
                      </property>
                     </widget>
                    </item>
@@ -454,8 +470,14 @@
               <property name="minimum">
                <number>150</number>
               </property>
+              <property name="maximum">
+               <number>600</number>
+              </property>
               <property name="singleStep">
                <number>1</number>
+              </property>
+              <property name="value">
+               <number>400</number>
               </property>
               <property name="orientation">
                <enum>Qt::Vertical</enum>
@@ -479,9 +501,12 @@
                </widget>
               </item>
               <item>
-               <widget class="QRadioButton" name="radioButtonGrasp">
+               <widget class="QRadioButton" name="radioButtonReady">
                 <property name="text">
-                 <string>Grasp</string>
+                 <string>Ready</string>
+                </property>
+                <property name="checkable">
+                 <bool>false</bool>
                 </property>
                </widget>
               </item>
@@ -769,11 +794,32 @@
               </widget>
              </item>
              <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_31">
+               <item>
+                <widget class="QLabel" name="label_30">
+                 <property name="text">
+                  <string>Model Path</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="lineEditModelPath_3"/>
+               </item>
+               <item>
+                <widget class="QToolButton" name="toolButtonModelPath_3">
+                 <property name="text">
+                  <string>...</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
               <layout class="QHBoxLayout" name="horizontalLayout_7">
                <item>
                 <widget class="QLabel" name="label_8">
                  <property name="text">
-                  <string>Model Path</string>
+                  <string>Model File</string>
                  </property>
                 </widget>
                </item>

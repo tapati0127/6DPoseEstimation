@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "camera.h"
 #include <opencv2/surface_matching/ppf_helpers.hpp>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -18,6 +19,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(camera, &Camera::framesReady, this, &MainWindow::receiveFrame);
     connect(camera, &Camera::pclReady, this, &MainWindow::receivePcl);
     connect(camera, &Camera::pointCloudReady, this, &MainWindow::receivePointCloud);
+    camera->setMaxRange(ui->verticalSlider->value());
+    connect(ui->verticalSlider,&QSlider::valueChanged,camera,&Camera::maxRangeChanged);
+    connect(camera,&Camera::connected,this,&MainWindow::readyStatus);
     camera->start();
 
     viewer = new pclViewer(ui->qvtkWidget);
@@ -31,6 +35,11 @@ MainWindow::MainWindow(QWidget *parent) :
 //    //calib->test();
 
     servo = new ServoControl();
+
+
+    ppf = new PPF(modelPath.toStdString());
+    ppf->start();
+    connect(ppf,&PPF::complete,this,&MainWindow::readyStatus);
 
 }
 
@@ -55,6 +64,20 @@ void MainWindow::receivePcl(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pointcloud)
 
 void MainWindow::receivePointCloud(cv::Mat pointcloud)
 {
+    if(isTrigger){
+        if(isReady){
+            ppf_match_3d::Pose3DPtr result;
+            cv::Mat pc;
+            ppf->caculatePPF(pointcloud,result,pc);
+            pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pcl_(new pcl::PointCloud<pcl::PointXYZRGBA>);
+            Convert::mat2Pcl(pc,pcl_);
+            viewer->displayPCLModel(pcl_,"result");
+        }
+        else{
+            std::cout << "Not Ready" << std::endl;
+        }
+        isTrigger = false;
+    }
 
 }
 
@@ -121,6 +144,15 @@ void MainWindow::WriteSettings() {
     settings.setValue("jobName",ui->lineEditJobName->text());
 }
 
+void MainWindow::readyStatus()
+{
+    std::cout << "Ready" << std::endl;
+    if(camera->camera_running&&ppf->isComplete){
+        ui->radioButtonReady->setChecked(true);
+        isReady = true;
+    }
+}
+
 void MainWindow::on_toolButtonCalib_clicked()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Chose File"),
@@ -182,4 +214,16 @@ void MainWindow::on_pushButtonStartSave_clicked()
     connect(camera, &Camera::pclReady, this, &MainWindow::receivePcl);
     connect(camera, &Camera::pointCloudReady, this, &MainWindow::receivePointCloud);
     camera->start();
+}
+
+void MainWindow::on_verticalSlider_valueChanged(int value)
+{
+
+}
+
+
+
+void MainWindow::on_radioButtonTrigger_toggled(bool checked)
+{
+    isTrigger=checked;
 }

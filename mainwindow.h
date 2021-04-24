@@ -9,6 +9,7 @@
 #include "handeyecalibration.h"
 #include "servocontrol.h"
 #include "motoudp.h"
+#include "ppf.h"
 namespace Ui {
 class MainWindow;
 }
@@ -28,6 +29,13 @@ public slots:
     void addCoordinate(Eigen::Affine3f aswer);
     void ReadSettings();
     void WriteSettings();
+    void readyStatus();
+private slots:
+    void on_radioButtonTrigger_toggled(bool checked);
+
+private slots:
+    void on_verticalSlider_valueChanged(int value);
+
 private slots:
     void on_pushButtonStartSave_clicked();
 
@@ -63,6 +71,7 @@ private:
     HandEyeCalibration *calib;
     ServoControl* servo;
     MotoUDP* motoudp;
+    PPF* ppf;
     bool isRuntime = true;
 
     QString robotIP;
@@ -72,6 +81,8 @@ private:
     QString calibFile;
     QString camFile;
     QString modelPath;
+    bool isTrigger = false;
+    bool isReady = false;
 
 };
 

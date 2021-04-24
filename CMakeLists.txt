@@ -16,7 +16,9 @@ find_package(Qt5 COMPONENTS Widgets Core Network SerialPort REQUIRED)
 #find_package(VTK REQUIRED)
 find_package(PCL REQUIRED)
 find_package(realsense2 REQUIRED)
-find_package(OpenCV REQUIRED)
+set(${OpenCV_DIR} /home/tapati/OpenCV/build-opencv-Desktop-Default)
+#find_package(OpenCV 4.5.1 COMPONENTS core surface_matching)
+find_package(OpenCV 4.5.1 REQUIRED)
 find_package(VISP REQUIRED)
 if(VISP_FOUND)
   include(${VISP_USE_FILE})
@@ -24,7 +26,7 @@ endif(VISP_FOUND)
 # Fix a compilation bug under ubuntu 16.04 (Xenial)
 list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4")
 
-include_directories(${SOURCE_DIR} ${PCL_INCLUDE_DIRS} ${realsense2_INCLUDE_DIR} ${OpenCV_INCLUDE_DIRS} ${VISP_INCLUDE_DIRS})
+include_directories(${SOURCE_DIR} ${PCL_INCLUDE_DIRS} ${realsense2_INCLUDE_DIR} ${OpenCV_INCLUDE_DIRS}  ${VISP_INCLUDE_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 add_executable(6DPoseEstimation
@@ -36,8 +38,9 @@ add_executable(6DPoseEstimation
     handeyecalibration.cpp
     motoudp.cpp
     convert.h
-    vpDisplay_impl.h
+    #vpDisplay_impl.h
     servocontrol.cpp
+    ppf.cpp
     #resources.qrc
 )
 #qt5_use_modules(6DPoseEstimation Core SerialPort)

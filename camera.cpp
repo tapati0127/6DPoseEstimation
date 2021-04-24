@@ -25,7 +25,13 @@ void Camera::ConnectCamera(){
         std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         advanced_mode_dev.load_json(str);
         camera_running = true;
+        Q_EMIT connected();
     }
+}
+
+void Camera::maxRangeChanged(int value)
+{
+    maxRange=value/1000.0;
 }
 Camera::Camera(int rgb_width, int rgb_height, int depth_width, int depth_height, int fps, std::string cameraFile)
 {
@@ -51,18 +57,24 @@ void Camera::run()
         if(thread_stop) return;
     }
     pcl.reset(new pcl::PointCloud<pcl::PointXYZRGBA>);
+    rs2::colorizer c;
     while(camera_running)
     {
         // Wait for frames and get them as soon as they are ready
         frames = pipe.wait_for_frames();
-
+        rs2::align align_to_color(RS2_STREAM_COLOR);
+        frames = align_to_color.process(frames);
 
         // Let's get our depth frame
         rs2::depth_frame depth = frames.get_depth_frame();
 
+        //auto colorized_depth = c.colorize(depth);
+
+
+
         rs2::decimation_filter dec_filter(2);  // Decimation - reduces depth frame density
         rs2::sequence_id_filter seq_filter(2);
-        rs2::threshold_filter thres_filter(0.15,0.3);
+        rs2::threshold_filter thres_filter(0.15,maxRange);
         rs2::spatial_filter spat_filter;    // Spatial    - edge-preserving spatial smoothing
         rs2::temporal_filter temp_filter;   // Temporal   - reduces temporal noi
         rs2::disparity_transform depth_to_disparity(true);
@@ -78,6 +90,9 @@ void Camera::run()
         auto inrist = rs2::video_stream_profile(depth.get_profile()).get_intrinsics();
         // And our rgb frame
         rs2::frame rgb = frames.get_color_frame();
+        rs2::video_frame colorized_depth = rgb.as<rs2::video_frame>();
+        int stride =colorized_depth.get_stride_in_bytes();
+        uint8_t* ptr = (uint8_t*)colorized_depth.get_data();
         //uint8_t* ptr = (uint8_t*)rgb.get_data();
         //int stride = rgb.as<rs2::video_frame>().get_stride_in_bytes();
 
@@ -110,9 +125,10 @@ void Camera::run()
                     pcl->points.at(index).x =P[0];
                     pcl->points.at(index).y =P[1];
                     pcl->points.at(index).z =P[2];
-                    pcl->points.at(index).r =0;
-                    pcl->points.at(index).g =255;
-                    pcl->points.at(index).b =0;
+                    pcl->points.at(index).r =int(ptr[y * stride + (3*x)    ]);
+                    pcl->points.at(index).g =int(ptr[y * stride + (3*x) + 1]);
+                    pcl->points.at(index).b =int(ptr[y * stride + (3*x) + 2]);
+
                     index++;
                 }
             }
