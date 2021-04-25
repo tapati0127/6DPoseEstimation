@@ -7,8 +7,9 @@
 #include <visp3/vision/vpHandEyeCalibration.h>
 #include <visp3/gui/vpDisplayX.h>
 #include <visp3/core/vpEigenConversion.h>
-HandEyeCalibration::HandEyeCalibration(const QString &ip)
+HandEyeCalibration::HandEyeCalibration(const QString &ip,std::string cameraFile)
 {   
+    this->cameraFile=cameraFile;
     qRegisterMetaType<Eigen::Affine3f>();
     motoudp = new MotoUDP(QHostAddress(ip),10040);
     motoudp->ConnectMotoman();
@@ -20,7 +21,7 @@ void HandEyeCalibration::run()
 {
   vpDetectorAprilTag::vpAprilTagFamily tagFamily = vpDetectorAprilTag::TAG_36h11;
   vpDetectorAprilTag::vpPoseEstimationMethod poseEstimationMethod = vpDetectorAprilTag::HOMOGRAPHY_VIRTUAL_VS;
-  double tagSize = 0.0632;
+  double tagSize = 0.063;
   float quad_decimate = 1.0;
   int nThreads = 1;
   bool display_tag = false;
@@ -45,7 +46,15 @@ void HandEyeCalibration::run()
        rs2::context ctx;
        auto list = ctx.query_devices();
        if(list.size() > 0){
+
            g.open(config);
+           auto pro = g.getPipeline().get_active_profile();
+           rs2::device dev = pro.get_device();
+           auto advanced_mode_dev = dev.as<rs400::advanced_mode>();
+           std::ifstream file(cameraFile);
+           std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+           advanced_mode_dev.load_json(str);
+
 
            const float depth_scale = g.getDepthScale();
            rs2::align align_to_color = RS2_STREAM_COLOR;
@@ -97,7 +106,7 @@ void HandEyeCalibration::run()
              g.acquire(reinterpret_cast<unsigned char *>(I_color.bitmap), reinterpret_cast<unsigned char *>(I_depth_raw.bitmap),
                        nullptr, nullptr, &align_to_color);
              QImage tmp;
-             tmp = Convert::vispToQImage(I_color);
+             tmp = vispToQImage(I_color);
              Q_EMIT framesReady(tmp,tmp);
 
              vpImageConvert::convert(I_color, I);
@@ -150,7 +159,7 @@ void HandEyeCalibration::run()
                          if (confidence_index > 0.5) {
                              cv::Mat test;
                              vpDisplay::displayFrame(I_color2, cMo_, cam, tagSize/2, vpColor::none, 3);
-                             Convert::ViSP2Mat(cMo_,test);
+                             ViSP2Mat(cMo_,test);
                              if(trigger){
                              int32_t pos[6];
                              if(motoudp->GetPosition(pos)){
@@ -185,10 +194,11 @@ void HandEyeCalibration::run()
            }
        }
        else{
-           std::cout << "Cannot connect with camera" << std::endl;
+           std::cout << "Cannot connect with camera, simulate" << std::endl;
            while(!thread_stop){
-               if(sendPosition){
-                   sendPosition = false;
+               //std::cout << "Test Thread" << std::endl;
+               if(trigger){
+                   trigger = false;
                    int32_t pos[6];
                    if(motoudp->GetPosition(pos)){
                        receivedPosition(pos);}
@@ -224,13 +234,14 @@ void HandEyeCalibration::receivedPosition(int32_t*pos)
     position[4]=float(*(pos+4))/10000*M_PI/180;
     position[5]=float(*(pos+5))/10000*M_PI/180;
     cv::Mat position_vector = cv::Mat(3,1, CV_32F, position);
-    cv::Mat temp = cv::Mat(3,1, CV_32F, position+3);
-    //std::cout << "pos " << temp << "vec" << position_vector << std::endl;
+    cv::Vec3f temp(position[3],position[4],position[5]);
+    std::cout << "ori " << temp*180/M_PI << std::endl;
     cv::Mat rotation_matrix;
     cv::Mat pose(4,4, CV_32F);
-    Convert::Euler(temp,rotation_matrix,CALIB_RADIANS);
-    Convert::rtToPose(rotation_matrix,position_vector,pose);
-    //std::cout << "wMe pose " << std::endl << pose << std::endl;
+    rotation_matrix = eulerAnglesToRotationMatrix(temp);
+    //std::cout << rotation_matrix*180.0/M_PI << std::endl;
+    rtToPose(rotation_matrix,position_vector,pose);
+    //std::cout << "rotation_matrix " << std::endl << rotation_matrix << std::endl;
 
     pose = pose.inv();
     R_base2gripper.push_back(pose.colRange(0,3).rowRange(0,3));
@@ -241,22 +252,23 @@ void HandEyeCalibration::receivedPosition(int32_t*pos)
 //    }
 
     vpHomogeneousMatrix pose_;
-    Convert::Mat2ViSP(pose,pose_);
+    Mat2ViSP(pose,pose_);
+
     eMw.push_back(pose_);
     std::cout << "eMw pose " << std::endl << pose << std::endl;
     isReceivePositionFromRobot = true;
 
-    Eigen::Affine3f eigen_pose;
-    Eigen::Matrix4d matrix_pose;
-    vp::visp2eigen(pose_.inverse(),matrix_pose);
-    eigen_pose.matrix() = matrix_pose.cast<float>();
-    //Q_EMIT finishCalibrate(eigen_pose);
+//    Eigen::Affine3f eigen_pose;
+//    Eigen::Matrix4d matrix_pose;
+//    vp::visp2eigen(pose_.inverse(),matrix_pose);
+//    eigen_pose.matrix() = matrix_pose.cast<float>();
+//    Q_EMIT finishCalibrate(eigen_pose);
 }
 
 void HandEyeCalibration::caculatePose()
 {
     if(eMw.size()>=3&&cMo.size()>=3){
-       cv::calibrateHandEye(R_base2gripper,t_base2gripper,R_target2cam,t_target2cam,R_cam2base,t_cam2base);
+       cv::calibrateHandEye(R_base2gripper,t_base2gripper,R_target2cam,t_target2cam,R_cam2base,t_cam2base,cv::CALIB_HAND_EYE_PARK);
        //wMc.eye();
        int ret = vpHandEyeCalibration::calibrate(cMo,eMw,wMc);
        std::cout << "***OPENCV***" << std::endl;

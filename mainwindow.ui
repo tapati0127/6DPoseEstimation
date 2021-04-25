@@ -498,34 +498,55 @@
                 <property name="text">
                  <string>Trigger</string>
                 </property>
+                <property name="autoExclusive">
+                 <bool>false</bool>
+                </property>
                </widget>
               </item>
               <item>
                <widget class="QRadioButton" name="radioButtonReady">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="text">
                  <string>Ready</string>
                 </property>
                 <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoExclusive">
                  <bool>false</bool>
                 </property>
                </widget>
               </item>
               <item>
                <widget class="QRadioButton" name="radioButtonRunning">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="text">
                  <string>Running</string>
                 </property>
                 <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoExclusive">
                  <bool>false</bool>
                 </property>
                </widget>
               </item>
               <item>
                <widget class="QRadioButton" name="radioButtonFail">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
                 <property name="text">
                  <string>Fail</string>
                 </property>
                 <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoExclusive">
                  <bool>false</bool>
                 </property>
                </widget>

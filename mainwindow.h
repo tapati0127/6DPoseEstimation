@@ -29,7 +29,8 @@ public slots:
     void addCoordinate(Eigen::Affine3f aswer);
     void ReadSettings();
     void WriteSettings();
-    void readyStatus();
+    void readyCameraStatus();
+    void readyPPFStatus();
 private slots:
     void on_radioButtonTrigger_toggled(bool checked);
 

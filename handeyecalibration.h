@@ -13,13 +13,15 @@
 #include <librealsense2/rs.hpp> 
 #include "convert.h"
 #include "motoudp.h"
+#include <librealsense2/rs_advanced_mode.hpp>
+#include <librealsense2/rsutil.h>
 Q_DECLARE_METATYPE(Eigen::Affine3f)
 
 class HandEyeCalibration: public QThread
 {
     Q_OBJECT
 public:
-    HandEyeCalibration(const QString &ip);
+    HandEyeCalibration(const QString &ip,std::string cameraFile);
     // Member function that handles thread iteration
     void run();
     // If called it will stop the thread
@@ -48,6 +50,7 @@ private:
     bool isSimulation = true;
     bool thread_stop=false;
      vpRealSense2 g;
+     std::string cameraFile;
     //cv::Mat R_base2cam_,t_base2cam_;
 
     //

@@ -37,11 +37,10 @@ add_executable(6DPoseEstimation
     pclviewer.cpp
     handeyecalibration.cpp
     motoudp.cpp
-    convert.h
-    #vpDisplay_impl.h
+    convert.cpp
     servocontrol.cpp
     ppf.cpp
-    #resources.qrc
+
 )
 #qt5_use_modules(6DPoseEstimation Core SerialPort)
 target_link_libraries(6DPoseEstimation ${realsense2_LIBRARY} Qt5::Widgets Qt5::Network Qt5::SerialPort ${PCL_LIBRARIES} ${OpenCV_LIBS} ${VISP_LIBRARIES})

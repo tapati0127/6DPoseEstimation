@@ -24,6 +24,7 @@ public:
     void displayCoordiante(Eigen::Affine3f pose);
     bool isPclAdded = false;
     void displayPCLModel(PointCloudT::Ptr pc, std::string name);
+    void displayPCLScene(PointCloudT::Ptr pc, std::string name);
 protected:
   pcl::visualization::PCLVisualizer::Ptr viewer;
   PointCloudT::Ptr cloud;

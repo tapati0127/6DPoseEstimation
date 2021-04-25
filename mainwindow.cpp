@@ -21,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(camera, &Camera::pointCloudReady, this, &MainWindow::receivePointCloud);
     camera->setMaxRange(ui->verticalSlider->value());
     connect(ui->verticalSlider,&QSlider::valueChanged,camera,&Camera::maxRangeChanged);
-    connect(camera,&Camera::connected,this,&MainWindow::readyStatus);
+    connect(camera,&Camera::connected,this,&MainWindow::readyCameraStatus);
     camera->start();
 
     viewer = new pclViewer(ui->qvtkWidget);
@@ -39,7 +39,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ppf = new PPF(modelPath.toStdString());
     ppf->start();
-    connect(ppf,&PPF::complete,this,&MainWindow::readyStatus);
+    connect(ppf,&PPF::complete,this,&MainWindow::readyPPFStatus);
 
 }
 
@@ -70,13 +70,14 @@ void MainWindow::receivePointCloud(cv::Mat pointcloud)
             cv::Mat pc;
             ppf->caculatePPF(pointcloud,result,pc);
             pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pcl_(new pcl::PointCloud<pcl::PointXYZRGBA>);
-            Convert::mat2Pcl(pc,pcl_);
-            viewer->displayPCLModel(pcl_,"result");
+            mat2Pcl(pc,pcl_);
+            viewer->displayPCLScene(pcl_,"result");
         }
         else{
             std::cout << "Not Ready" << std::endl;
         }
         isTrigger = false;
+        ui->radioButtonTrigger->setChecked(false);
     }
 
 }
@@ -144,14 +145,24 @@ void MainWindow::WriteSettings() {
     settings.setValue("jobName",ui->lineEditJobName->text());
 }
 
-void MainWindow::readyStatus()
+void MainWindow::readyCameraStatus()
 {
-    std::cout << "Ready" << std::endl;
+    std::cout << "Camera Ready" << std::endl;
     if(camera->camera_running&&ppf->isComplete){
         ui->radioButtonReady->setChecked(true);
         isReady = true;
     }
 }
+
+void MainWindow::readyPPFStatus()
+{
+    std::cout << "PPF Ready" << std::endl;
+    if(camera->camera_running&&ppf->isComplete){
+        ui->radioButtonReady->setChecked(true);
+        isReady = true;
+    }
+}
+
 
 void MainWindow::on_toolButtonCalib_clicked()
 {
@@ -185,7 +196,7 @@ void MainWindow::on_toolButtonModelPath_clicked()
          ui->lineEditModelPath->setText(fileName);
          pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pcl_(new pcl::PointCloud<pcl::PointXYZRGBA>);
          cv::Mat input = ppf_match_3d::loadPLYSimple(fileName.toStdString().c_str(),0);
-         Convert::mat2Pcl(input,pcl_);
+         mat2Pcl(input,pcl_);
          viewer_->displayPCLModel(pcl_,ui->lineEditModelPath->text().toStdString());
     }
 }
@@ -195,7 +206,7 @@ void MainWindow::on_pushButtonStartCalib_clicked()
     isRuntime=false;
     camera->stop();
     delete camera;
-    calib = new HandEyeCalibration(this->ui->lineEditRobotIP->text());
+    calib = new HandEyeCalibration(this->ui->lineEditRobotIP->text(),this->ui->lineEditCameraParam->text().toStdString());
     connect(calib, &HandEyeCalibration::finishCalibrate, this, &MainWindow::addCoordinate);
     //Realrun
     calib->start();

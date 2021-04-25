@@ -97,8 +97,8 @@ void Camera::run()
         //int stride = rgb.as<rs2::video_frame>().get_stride_in_bytes();
 
         // Let's convert them to QImage
-        auto q_rgb = Convert::realsenseFrameToQImage(rgb);
-        auto q_depth = Convert::realsenseFrameToQImage(depth);
+        auto q_rgb = realsenseFrameToQImage(rgb);
+        auto q_depth = realsenseFrameToQImage(depth);
 
         // And finally we'll emit our signal
         emit framesReady(q_rgb, q_depth);
