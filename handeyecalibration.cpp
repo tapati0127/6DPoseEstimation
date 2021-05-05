@@ -21,7 +21,7 @@ void HandEyeCalibration::run()
 {
   vpDetectorAprilTag::vpAprilTagFamily tagFamily = vpDetectorAprilTag::TAG_36h11;
   vpDetectorAprilTag::vpPoseEstimationMethod poseEstimationMethod = vpDetectorAprilTag::HOMOGRAPHY_VIRTUAL_VS;
-  double tagSize = 0.063;
+  double tagSize = 0.021;
   float quad_decimate = 1.0;
   int nThreads = 1;
   bool display_tag = false;
@@ -282,9 +282,16 @@ void HandEyeCalibration::caculatePose()
            vp::visp2eigen(wMc,matrix_pose_cam2base);
            eigen_pose_cam2base.matrix() = matrix_pose_cam2base.cast<float>();
            Q_EMIT finishCalibrate(eigen_pose_cam2base);
+           Convert::ViSP2Matx(wMc,this->calib_pose);
        }
        else{
            std::cout << "Fail VISP" << std::endl;
+       }
+       if(vpHandEyeCalibration::calibrate(eMw,cMo,oMe)==0){
+           std::cout << " Result oMe " << std::endl << oMe << std::endl;
+       }
+       else{
+           std::cout << " Fail " << std::endl;
        }
     }
     else{
@@ -323,11 +330,13 @@ void HandEyeCalibration::test()
     cMo.push_back(wMc_true.inverse()*base2gripper5.inverse()*oMe_true.inverse());
 
     if(vpHandEyeCalibration::calibrate(cMo,eMw,wMc)==0){
-        std::cout << " Result " << std::endl << wMc << std::endl;
+        std::cout << " Result wMc " << std::endl << wMc << std::endl;
     }
     else{
         std::cout << " Fail " << std::endl;
     }
+
+
 
 }
 

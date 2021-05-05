@@ -27,6 +27,7 @@ public:
                        };
     ~MotoUDP();
     void run();
+    void stop(){isRunning=false;}
     bool ConnectMotoman();
     bool CloseMotoman();
     bool TurnOnServo();
@@ -41,12 +42,18 @@ public:
     bool WriteMultipleVarPosition(u_int16_t index,u_int32_t number, int32_t* pos);
     bool ConnectToPLC(QHostAddress host, u_int port,uint16_t adr,uint16_t no_reg,std::vector<uint16_t> data);
     bool WriteByte(u_int16_t instance, uint8_t data);
-
+    bool WriteMultipleBytes(u_int16_t instance,uint32_t number, uint8_t* data);
+    bool ReadMultipleBytes(u_int16_t instance,uint32_t number, uint8_t* data);
+    bool triggerTurnOnServo = false,triggerTurnOffServo = false,triggerWritePositions = false, triggerStartJob = false;
+    uint8_t ready = 0, running = 0, fail = 0, objectID = 0;
+    uint8_t trigger, gripperOpenCommand, gripperOpenWidth, PickingDistance;
+    int32_t position[12];
 private:
     bool SendData (char* buffer, int lenght);
     QUdpSocket* client;
     QHostAddress _HostAddress;
     quint16 _port;
+    bool isRunning = true;
     static const double PULSE_PER_DEGREE_S;
     static const double PULSE_PER_DEGREE_L;
     static const double PULSE_PER_DEGREE_U;
@@ -56,6 +63,10 @@ private:
     struct TxDataWritePulse;
     struct TxDataWriteVariablePosition;
     struct RxData;
+public: signals:
+    void triggerPPF();
+    void triggerGripper(int gripperWidth);
+
 };
 
 #endif // MOTOUDP_H

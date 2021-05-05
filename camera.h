@@ -14,6 +14,7 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include "opencv2/core.hpp"
 #include "convert.h"
+#include "ppf.h"
 // Let's define our camera as a thread, it will be constantly running and sending frames to
 // our main window
 Q_DECLARE_METATYPE(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr)
@@ -36,6 +37,7 @@ public:
          }
     void setMaxRange(const int&value){maxRange=value/1000.0;}
     bool camera_running = false;
+    bool capture = false;
 signals:
     void connected();
 private:
@@ -57,6 +59,7 @@ private:
 
     int rgb_width; int rgb_height; int depth_width; int depth_height; int fps; std::string cameraFile;
     QTimer* tm;
+    int captureCount = 0;
 signals:
     // A signal sent by our class to notify that there are frames that need to be processed
     void framesReady(QImage frameRGB, QImage frameDepth);

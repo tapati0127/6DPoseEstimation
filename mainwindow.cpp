@@ -2,7 +2,7 @@
 #include "ui_mainwindow.h"
 #include "camera.h"
 #include <opencv2/surface_matching/ppf_helpers.hpp>
-
+using namespace Convert;
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -10,7 +10,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     ReadSettings();
     //UDP Connection Initialize
-//    motoudp = new MotoUDP(QHostAddress(ui->textEditIPAddress->toPlainText()),10040);
+    motoudp = new MotoUDP(QHostAddress(ui->lineEditRobotIP->text()),10040);
+    connect(motoudp, &MotoUDP::triggerPPF, this, &MainWindow::triggerByRobot);
+    motoudp->start();
+
 //    motoudp->connectMotoman();
 
 
@@ -27,19 +30,19 @@ MainWindow::MainWindow(QWidget *parent) :
     viewer = new pclViewer(ui->qvtkWidget);
     viewer_ = new pclViewer(ui->qvtkWidgetModel);
 
-//    calib = new HandEyeCalibration(this->robotIP);
-//    connect(calib, &HandEyeCalibration::finishCalibrate, this, &MainWindow::addCoordinate);
-//    //Realrun
-//    calib->start();
-//    //Just Test
-//    //calib->test();
-
     servo = new ServoControl();
 
 
     ppf = new PPF(modelPath.toStdString());
     ppf->start();
     connect(ppf,&PPF::complete,this,&MainWindow::readyPPFStatus);
+    cv::Matx44d mat(0.02518456169,  0.9961177387,  -0.0843515765,  0.2652645862,
+                    0.9991963621,  -0.02245054794,  0.03320546554,  -0.2020528898,
+                    0.03118281413,  -0.08512005347,  -0.9958826279,  0.1593551343,
+                    0,  0,  0,  1);
+    calib_pose = mat;
+
+//    Convert::saveMatFile(mat,"/home/tapati/calib");
 
 }
 
@@ -71,7 +74,44 @@ void MainWindow::receivePointCloud(cv::Mat pointcloud)
             ppf->caculatePPF(pointcloud,result,pc);
             pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pcl_(new pcl::PointCloud<pcl::PointXYZRGBA>);
             mat2Pcl(pc,pcl_);
-            viewer->displayPCLScene(pcl_,"result");
+//            Eigen::Affine3f pose;
+//            mat2eigen(result->pose,pose);
+//            viewer->displayPCLScene(pcl_,"result",pose);
+
+            Matx44d test{0,-1,0,0,
+                         0,0,-1,0.1,
+                         1,0,0,0,
+                         0,0,0,1};
+
+            Eigen::Affine3f pose;
+            mat2eigen(result->pose*test,pose);
+            viewer->displayPCLScene(pcl_,"result",pose);
+
+            Matx44d robot_pos = calib_pose*result->pose*test;
+            cout << "pose: " << robot_pos << std::endl;
+            Mat as(robot_pos);
+            Mat rot;
+            as.colRange(0,3).rowRange(0,3).convertTo(rot,CV_32F);
+            cout << "translation: " << as.rowRange(0,3).col(3)*1000 << std::endl;;
+            cout << " rotation: " << Convert::rotationMatrixToEulerAngles(rot)*180/M_PI << std::endl;
+            Vec3f rotation = Convert::rotationMatrixToEulerAngles(rot)*180/M_PI;
+
+            motoudp->position[0] = round(as.at<double>(0,3)*1000000);
+            motoudp->position[1] = round(as.at<double>(1,3)*1000000);
+            motoudp->position[2] = round(as.at<double>(2,3)*1000000);
+            motoudp->position[3] = round(rotation[0]*10000);
+            motoudp->position[4] = round(rotation[1]*10000);
+            motoudp->position[5] = round(rotation[2]*10000);
+            motoudp->position[6] = round(as.at<double>(0,3)*1000000);
+            motoudp->position[7] = round(as.at<double>(1,3)*1000000);
+            motoudp->position[8] = round(as.at<double>(2,3)*1000000);
+            motoudp->position[9] = round(rotation[0]*10000);
+            motoudp->position[10] = round(rotation[1]*10000);
+            motoudp->position[11] = round(rotation[2]*10000);
+            motoudp->triggerWritePositions = true;
+
+
+
         }
         else{
             std::cout << "Not Ready" << std::endl;
@@ -120,7 +160,7 @@ void MainWindow::ReadSettings() {
     ui->spinBoxFirstPV->setValue(firstPV);
     firstBV = settings.value("firstBV",40).toInt();
     ui->spinBoxFirstBV->setValue(firstBV);
-    calibFile = settings.value("calibFile",QString("Choose Path")).toString();
+    calibFile = settings.value("calibFile",QDir::currentPath()).toString();
     ui->lineEditCalibrationFile->setText(calibFile);
     camFile = settings.value("camFile",QString("Choose Path")).toString();
     ui->lineEditCameraParam->setText(camFile);
@@ -128,7 +168,8 @@ void MainWindow::ReadSettings() {
     ui->lineEditModelPath->setText(modelPath);
     jobName = settings.value("jobName",QString("Choose Path")).toString();
     ui->lineEditJobName->setText(jobName);
-
+    Convert::loadMatFile(calib_pose,calibFile.toStdString());
+    //std::cout << calib_pose << std::endl;
 }
 
 void MainWindow::WriteSettings() {
@@ -147,7 +188,10 @@ void MainWindow::WriteSettings() {
 
 void MainWindow::readyCameraStatus()
 {
-    std::cout << "Camera Ready" << std::endl;
+    if(camera->camera_running){
+        ui->radioButtonRunning->setChecked(true);
+        isCameraRunning = true;
+    }
     if(camera->camera_running&&ppf->isComplete){
         ui->radioButtonReady->setChecked(true);
         isReady = true;
@@ -163,16 +207,24 @@ void MainWindow::readyPPFStatus()
     }
 }
 
+void MainWindow::triggerByRobot()
+{
+    isTrigger = true;
+}
+
 
 void MainWindow::on_toolButtonCalib_clicked()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Chose File"),
-                                                    ui->lineEditCalibrationFile->text(),
-                                                    tr("Images (*.png *.xpm *.jpg)"));
-
-    if(!fileName.isNull()&&!fileName.isEmpty()){
-         ui->lineEditCalibrationFile->setText(fileName);
+    QFileDialog dialog;
+    dialog.setFileMode(QFileDialog::DirectoryOnly);
+    dialog.setOption(QFileDialog::ShowDirsOnly, false);
+    if(dialog.exec()){
+        QString fileName = dialog.directory().path();
+        if(!fileName.isNull()&&!fileName.isEmpty()){
+             ui->lineEditCalibrationFile->setText(fileName);
+        }
     }
+
 }
 
 void MainWindow::on_toolButtonCalibCameraParam_clicked()
@@ -218,6 +270,7 @@ void MainWindow::on_pushButtonStartSave_clicked()
 {
     isRuntime = true;
     calib->stop();
+    Convert::saveMatFile(calib->calib_pose,ui->lineEditCalibrationFile->text().toStdString());
     delete calib;
 
     camera = new Camera(848, 480, 848, 480, 30,ui->lineEditCameraParam->text().toStdString());
@@ -237,4 +290,26 @@ void MainWindow::on_verticalSlider_valueChanged(int value)
 void MainWindow::on_radioButtonTrigger_toggled(bool checked)
 {
     isTrigger=checked;
+}
+
+void MainWindow::on_pushButtonSaveImage_clicked()
+{
+    camera->capture = true;
+}
+
+void MainWindow::on_pushButtonStart_clicked()
+{
+    motoudp->triggerStartJob = true;
+}
+
+void MainWindow::on_pushButtonServoOn_clicked()
+{
+    if(ui->pushButtonServoOn->text()=="Servo On"){
+        motoudp->triggerTurnOnServo = true;
+        ui->pushButtonServoOn->setText("Servo Off");
+    }
+    else{
+        motoudp->triggerTurnOffServo = true;
+        ui->pushButtonServoOn->setText("Servo On");
+    }
 }

@@ -1,5 +1,7 @@
 #include "camera.h"
 
+
+using namespace Convert;
 void Camera::ConnectCamera(){
     tm->stop();
     rs2::context ctx;
@@ -58,6 +60,9 @@ void Camera::run()
     }
     pcl.reset(new pcl::PointCloud<pcl::PointXYZRGBA>);
     rs2::colorizer c;
+    if(camera_running){
+        for (auto i = 0; i < 30; ++i) pipe.wait_for_frames();
+    }
     while(camera_running)
     {
         // Wait for frames and get them as soon as they are ready
@@ -91,6 +96,8 @@ void Camera::run()
         // And our rgb frame
         rs2::frame rgb = frames.get_color_frame();
         rs2::video_frame colorized_depth = rgb.as<rs2::video_frame>();
+
+
         int stride =colorized_depth.get_stride_in_bytes();
         uint8_t* ptr = (uint8_t*)colorized_depth.get_data();
         //uint8_t* ptr = (uint8_t*)rgb.get_data();
@@ -117,10 +124,10 @@ void Camera::run()
                 float P[3];
                 P[2] = depth.get_distance(x,y);
                 //rs2_deproject_pixel_to_point(planarPoint3d, &inrist, pixel, pixel_distance_in_meters);
-                if(P[2]>0.00001&&P[2]<0.6){
-                    P[0] = -(float)(x-inrist.ppx)*P[2]/inrist.fx;
+                if(P[2]>0.00001){
+                    P[0] = (float)(x-inrist.ppx)*P[2]/inrist.fx;
                     P[1] = (float)(y-inrist.ppy)*P[2]/inrist.fy;
-                    P[2] = -P[2];
+                    P[2] = P[2];
                     memcpy(pc.ptr<float>(index),P,sizeof(P));
                     pcl->points.at(index).x =P[0];
                     pcl->points.at(index).y =P[1];
@@ -131,6 +138,11 @@ void Camera::run()
 
                     index++;
                 }
+//                else{
+//                    ptr[y * stride + (3*x)]=255;
+//                    ptr[y * stride + (3*x) + 1]=255;
+//                    ptr[y * stride + (3*x) + 2] = 255;
+//                }
             }
         }
         pc.resize(index);
@@ -140,6 +152,25 @@ void Camera::run()
         emit pclReady(pcl);
         emit pointCloudReady(cloud);
         if(thread_stop) return;
+
+        if(capture){
+            std::string name = "capture/rbg" + std::to_string(captureCount);
+            std::string png = name + ".png";
+            Mat rgb = Convert::frame_to_mat(colorized_depth);
+            //cv::imshow("rgb",rgb);
+            cv::imwrite(png,rgb);
+            name = "capture/depth" + std::to_string(captureCount);
+            std::string png_depth = name + ".png";
+            Mat depth16 = Convert::frame_to_mat(depth);
+            //cv::imshow("depth",depth16);
+            cv::imwrite(png_depth,depth16);
+            name = "capture/pointcloud" + std::to_string(captureCount);
+            std::string ply = name + ".ply";
+            ppf_match_3d::writePLY(cloud,ply.c_str());
+            captureCount++;
+            capture = false;
+        }
+
     }
 }
 

@@ -40,7 +40,23 @@ add_executable(6DPoseEstimation
     convert.cpp
     servocontrol.cpp
     ppf.cpp
-
+    #yolo.cpp
 )
+#add_library(lib6DPoseEstimation SHARED
+#    mainwindow.ui
+#    mainwindow.cpp
+#    camera.cpp
+#    pclviewer.cpp
+#    handeyecalibration.cpp
+#    motoudp.cpp
+#    convert.cpp
+#    servocontrol.cpp
+#    ppf.cpp
+#    yolo.cpp
+#    )
+# Make sure the compiler can find include files for our lib6DPoseEstimation library
+# when other libraries or executables link to Hello
+#target_include_directories (lib6DPoseEstimation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 #qt5_use_modules(6DPoseEstimation Core SerialPort)
+#target_link_libraries(lib6DPoseEstimation ${realsense2_LIBRARY} Qt5::Widgets Qt5::Network Qt5::SerialPort ${PCL_LIBRARIES} ${OpenCV_LIBS} ${VISP_LIBRARIES})
 target_link_libraries(6DPoseEstimation ${realsense2_LIBRARY} Qt5::Widgets Qt5::Network Qt5::SerialPort ${PCL_LIBRARIES} ${OpenCV_LIBS} ${VISP_LIBRARIES})

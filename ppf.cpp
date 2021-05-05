@@ -90,16 +90,19 @@ bool PPF::caculatePPF(const Mat &pc, Pose3DPtr &result)
         int64 t1 = cv::getTickCount();
 
         // Register for all selected poses
-        cout << endl << "Performing ICP on " << N << " poses..." << endl;
+        //cout << endl << "Performing ICP on " << N << " poses..." << endl;
         icp.registerModelToScene(detector->model, pc_normal, resultsSub);
         int64 t2 = cv::getTickCount();
 
         cout << endl << "ICP Elapsed Time " <<
              (t2-t1)/cv::getTickFrequency() << " sec" << endl;
-        cout << endl << "There are " << resultsSub.size() << " poses" << endl;
+//        cout << endl << "There are " << resultsSub.size() << " poses" << endl;
 //        for (int i=0;i<resultsSub.size();i++) {
 //            Mat pct = transformPCPose(detector->model, resultsSub.at(i)->pose);
 //        }
+        cout << "pose " << resultsSub.at(0)->pose << endl;
+        cout << "numVotes " << resultsSub.at(0)->numVotes << endl;
+        cout << "residual " << resultsSub.at(0)->residual << endl;
         result = resultsSub.at(0);
         return true;
 }
@@ -149,8 +152,11 @@ bool PPF::caculatePPF(const Mat &pc, Pose3DPtr &result, Mat &pc_result)
 
         cout << endl << "ICP Elapsed Time " <<
              (t2-t1)/cv::getTickFrequency() << " sec" << endl;
-        cout << endl << "There are " << resultsSub.size() << " poses" << endl;
+        //cout << endl << "There are " << resultsSub.size() << " poses" << endl;
         pc_result = transformPCPose(detector->model, resultsSub.at(0)->pose);
+        cout << "pose " << resultsSub.at(0)->pose << endl;
+        cout << "numVotes " << resultsSub.at(0)->numVotes << endl;
+        cout << "residual " << resultsSub.at(0)->residual << endl;
         result = resultsSub.at(0);
         return true;
 }

@@ -31,6 +31,16 @@ public slots:
     void WriteSettings();
     void readyCameraStatus();
     void readyPPFStatus();
+    void triggerByRobot();
+private slots:
+    void on_pushButtonServoOn_clicked();
+
+private slots:
+    void on_pushButtonStart_clicked();
+
+private slots:
+    void on_pushButtonSaveImage_clicked();
+
 private slots:
     void on_radioButtonTrigger_toggled(bool checked);
 
@@ -84,6 +94,8 @@ private:
     QString modelPath;
     bool isTrigger = false;
     bool isReady = false;
+    bool isCameraRunning = false;
+    cv::Matx44d calib_pose;
 
 };
 

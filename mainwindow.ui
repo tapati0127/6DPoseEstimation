@@ -585,6 +585,11 @@
               </item>
              </layout>
             </widget>
+            <widget class="QPushButton" name="pushButtonSaveImage">
+             <property name="text">
+              <string>Capture</string>
+             </property>
+            </widget>
            </widget>
           </item>
          </layout>
@@ -783,7 +788,7 @@
                <item>
                 <widget class="QPushButton" name="pushButtonStartSave">
                  <property name="text">
-                  <string>Save</string>
+                  <string>Complete</string>
                  </property>
                 </widget>
                </item>

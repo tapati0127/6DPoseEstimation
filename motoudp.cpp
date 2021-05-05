@@ -20,10 +20,59 @@ MotoUDP::~MotoUDP()
 void MotoUDP::run()
 {
     ConnectMotoman();
-    TurnOnServo();
-    TurnOffServo();
-    while (1) {
-      ;
+    while (isRunning) {
+        uint8_t buffer[4];
+        if(ReadMultipleBytes(32,4,buffer)){
+            if(trigger==0&&buffer[0]>0) {
+                Q_EMIT triggerPPF();
+            }
+            if(gripperOpenCommand==0&&buffer[1]>0){
+                Q_EMIT triggerGripper(buffer[2]);
+            }
+            trigger = buffer[0];
+            gripperOpenCommand = buffer[1];
+            gripperOpenWidth = buffer[2];
+            PickingDistance = buffer[3];
+        }
+        else{
+            usleep(3000000);
+        }
+        uint8_t bufferWrite[4];
+        bufferWrite[0] = ready;
+        bufferWrite[1] = running;
+        bufferWrite[2] = fail;
+        bufferWrite[3] = objectID;
+        if(!WriteMultipleBytes(36,4,bufferWrite)){
+            usleep(3000000);
+        }
+        if(triggerWritePositions){
+            WriteMultipleVarPosition(32,2,position);
+            triggerWritePositions = false;
+        }
+        else{
+            usleep(3000000);
+        }
+        if(triggerTurnOnServo){
+            TurnOnServo();
+            triggerTurnOnServo = false;
+        }
+        else{
+            usleep(3000000);
+        }
+        if(triggerTurnOffServo){
+            TurnOffServo();
+            triggerTurnOffServo = false;
+        }
+        else{
+            usleep(3000000);
+        }
+        if(triggerStartJob){
+            StartJob();
+            triggerStartJob = false;
+        }
+        else{
+            usleep(3000000);
+        }
     }
 }
 struct MotoUDP::MotoUDP::TxData {
@@ -166,10 +215,14 @@ bool  MotoUDP::MotoUDP::TurnOnServo()
         array.resize(client->pendingDatagramSize());
         client->readDatagram(array.data(),array.size());
         memcpy(&rxHeader,array.data(),32);
-        if(rxHeader.status!=0) return false;
+        if(rxHeader.status!=0){
+            std::cout << "Cannot turn on the servo with error code " << std::hex << rxHeader.added_status << std::endl;
+            return false;
+        }
         return true;
     }
     else {
+        std::cout << "Cannot connect to the controller!" << std::endl;
         return false;
     }
 }
@@ -196,10 +249,14 @@ bool MotoUDP::MotoUDP::TurnOffServo()
       array.resize(client->pendingDatagramSize());
       client->readDatagram(array.data(),array.size());
       memcpy(&rxHeader,array.data(),32);
-      if(rxHeader.status!=0) return false;
+      if(rxHeader.status!=0){
+          std::cout << "Cannot turn off the servo with error code " << std::hex << rxHeader.added_status << std::endl;
+          return false;
+      }
       return true;
   }
   else {
+      std::cout << "Cannot connect to the controller!" << std::endl;
       return false;
   }
 }
@@ -308,13 +365,26 @@ bool MotoUDP::GetMultipleVarPosition(u_int16_t index, u_int32_t number, int32_t 
         array.resize(client->pendingDatagramSize());
         client->readDatagram(array.data(),array.size());
         memcpy(&rxHeader,array.data(),32);
-        if(rxHeader.status!=0) return false;
+        if(rxHeader.status!=0) {
+            std::cout << "Cannot read mutiple positions with error code " << std::hex << rxHeader.added_status << std::endl;
+            return false;}
+
         for (u_int32_t i= 0;i<number;i++) {
-            memcpy(pos+24*i,array.data()+53+i*sizeof(TxDataWriteVariablePosition),24);
+            //memcpy(pos+24*i,array.data()+53+i*24,24);
+            TxDataWriteVariablePosition position;
+            memcpy(&position,array.data()+4+sizeof(TxData)+sizeof (TxDataWriteVariablePosition)*i,sizeof (TxDataWriteVariablePosition));
+
+            pos[6*i+0]=position.first_axis_position;
+            pos[6*i+1]=position.second_axis_position;
+            pos[6*i+2]=position.third_axis_position;
+            pos[6*i+3]=position.fourth_axis_position;
+            pos[6*i+4]=position.fifth_axis_position;
+            pos[6*i+5]=position.sixth_axis_position;
         }
         return true;
     }
     else {
+         std::cout << "Cannot connect to the controller!" << std::endl;
         return false;
     }
 }
@@ -361,11 +431,13 @@ bool MotoUDP::WriteMultipleVarPosition(u_int16_t index, u_int32_t number, int32_
     sent_data.instance = index;
     sent_data.attribute = 0;
     sent_data.service = 0x34;
-    TxDataWriteVariablePosition position;
-    char buffer[4+sizeof(sent_data)+ sizeof (position)*number];
-    sent_data.data_size = sizeof(position)*number+4;
-    position.data_type = 17;
+
+    char buffer[4+sizeof(sent_data)+ sizeof (TxDataWriteVariablePosition)*number];
+    sent_data.data_size = sizeof(TxDataWriteVariablePosition)*number+4;
+
     for (int i = 0;i<number;i++) {
+        TxDataWriteVariablePosition position;
+        position.data_type = 17;
         position.first_axis_position = pos[6*i];
         position.second_axis_position = pos[6*i+1];
         position.third_axis_position = pos[6*i+2];
@@ -375,8 +447,9 @@ bool MotoUDP::WriteMultipleVarPosition(u_int16_t index, u_int32_t number, int32_
         memcpy(buffer+sizeof(sent_data)+sizeof(position)*i+4,&position,sizeof(position));
     }
     memcpy(buffer,&sent_data,sizeof (sent_data));
-    memcpy(buffer+4,&number,sizeof (number));
-    SendData(buffer,sizeof(buffer));
+    memcpy(buffer+sizeof (sent_data),&number,sizeof (number));
+    //std::cout << buffer << std::endl;
+    SendData(buffer,sent_data.header_size+sent_data.data_size);
     usleep(40000);
     if(client->pendingDatagramSize()>0){
         QByteArray array;
@@ -384,10 +457,11 @@ bool MotoUDP::WriteMultipleVarPosition(u_int16_t index, u_int32_t number, int32_
         array.resize(client->pendingDatagramSize());
         client->readDatagram(array.data(),array.size());
         memcpy(&rxHeader,array.data(),32);
-        if(rxHeader.status!=0) return false;
+        if(rxHeader.status!=0){std::cout << "Multiple Position Variable Status Code " << std::hex << rxHeader.added_status  << std::endl; return false;}
         return true;
     }
     else {
+        std::cout << "Cannot connect to the controller!"  << std::endl;
         return false;
     }
 }
@@ -498,6 +572,76 @@ bool MotoUDP::MotoUDP::WriteByte(u_int16_t instance,uint8_t data){
   else {
       return false;
   }
+}
+
+bool MotoUDP::WriteMultipleBytes(u_int16_t instance, uint32_t number, uint8_t *data)
+{
+    TxData sent_data;
+    sent_data.id = RECEIVE_TYPE::WRITE_BYTE;
+    sent_data.command_no = 0x302;
+    sent_data.instance = instance;
+    sent_data.attribute = 0;
+    sent_data.service = 0x34;
+    sent_data.data_size = 4 + number;
+    char buffer [sizeof(sent_data)+ 4 + number];
+    memcpy(buffer,&sent_data,sizeof (sent_data));
+    memcpy(buffer+sizeof(sent_data),&number,4);
+    memcpy(buffer+sizeof(sent_data)+4,data,number);
+
+    SendData(buffer,sent_data.header_size+sent_data.data_size);
+    usleep(30000);
+    if(client->pendingDatagramSize()>0){
+        QByteArray array;
+        RxData rxHeader;
+        array.resize(client->pendingDatagramSize());
+        client->readDatagram(array.data(),array.size());
+        memcpy(&rxHeader,array.data(),32);
+        if(rxHeader.status!=0)
+        {
+            std::cout << "Status Code Reading Multiple Bytes " << std::hex << rxHeader.added_status << std::endl;
+            return false;
+        }
+        return true;
+    }
+    else {
+         std::cout << "Cannot connect to the controller!" << std::endl;
+        return false;
+    }
+}
+
+bool MotoUDP::ReadMultipleBytes(u_int16_t instance, uint32_t number, uint8_t *data)
+{
+    TxData sent_data;
+    sent_data.id = RECEIVE_TYPE::WRITE_BYTE;
+    sent_data.command_no = 0x302;
+    sent_data.instance = instance;
+    sent_data.attribute = 0;
+    sent_data.service = 0x33;
+    sent_data.data_size = 4;
+    char buffer [sizeof(sent_data)+ 4];
+    memcpy(buffer,&sent_data,sizeof (sent_data));
+    memcpy(buffer+sizeof(sent_data),&number,4);
+
+    SendData(buffer,sent_data.header_size+sent_data.data_size);
+    usleep(30000);
+    if(client->pendingDatagramSize()>0){
+        QByteArray array;
+        RxData rxHeader;
+        array.resize(client->pendingDatagramSize());
+        client->readDatagram(array.data(),array.size());
+        memcpy(&rxHeader,array.data(),32);
+        if(rxHeader.status!=0)
+        {
+            std::cout << "Status Code Writing Multiple Bytes " << std::hex << rxHeader.added_status << std::endl;
+            return false;
+        }
+        memcpy(data,array.data()+36,number);
+        return true;
+    }
+    else {
+        std::cout << "Cannot connect to the controller!" << std::endl;
+        return false;
+    }
 }
 const double MotoUDP::MotoUDP::PULSE_PER_DEGREE_S = 34816/30;
 const double MotoUDP::MotoUDP::PULSE_PER_DEGREE_L = 102400/90;

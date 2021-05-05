@@ -16,7 +16,7 @@
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <librealsense2/rsutil.h>
 Q_DECLARE_METATYPE(Eigen::Affine3f)
-
+using namespace Convert;
 class HandEyeCalibration: public QThread
 {
     Q_OBJECT
@@ -31,6 +31,7 @@ public:
     void receivedPosition(int32_t* pos);
     void caculatePose();
     void test();
+    Matx44d calib_pose;
 signals:
     // A signal sent by our class to notify that there are frames that need to be processed
     void framesReady(QImage frameRGB, QImage frameDepth);
@@ -46,7 +47,7 @@ private:
     std::vector<cv::Mat> t_target2cam;
     std::vector<vpHomogeneousMatrix> eMw;
     cv::Mat R_cam2base,t_cam2base;
-    vpHomogeneousMatrix wMc;
+    vpHomogeneousMatrix wMc,oMe;
     bool isSimulation = true;
     bool thread_stop=false;
      vpRealSense2 g;

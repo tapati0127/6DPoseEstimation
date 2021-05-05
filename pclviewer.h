@@ -25,6 +25,7 @@ public:
     bool isPclAdded = false;
     void displayPCLModel(PointCloudT::Ptr pc, std::string name);
     void displayPCLScene(PointCloudT::Ptr pc, std::string name);
+    void displayPCLScene(PointCloudT::Ptr pc, std::string name, Eigen::Affine3f pose);
 protected:
   pcl::visualization::PCLVisualizer::Ptr viewer;
   PointCloudT::Ptr cloud;

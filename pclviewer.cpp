@@ -95,12 +95,23 @@ void pclViewer::displayPCLScene(PointCloudT::Ptr pc, std::string name)
     viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name);
     vtk->update();
 }
+void pclViewer::displayPCLScene(PointCloudT::Ptr pc, std::string name,Eigen::Affine3f pose)
+{
+    viewer->removePointCloud(name);
+    viewer->addPointCloud (pc, name);
+    viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, name);
+    viewer->removeCoordinateSystem("object");
+    viewer->addCoordinateSystem(0.05,pose,"object",0);
+    vtk->update();
+}
 
 void pclViewer::displayCoordiante(Eigen::Affine3f pose)
 {
+    viewer->addCoordinateSystem(0.05,"base");
     viewer->addCoordinateSystem(0.05,pose,"camera",0);
+    viewer->resetCamera();
     vtk->update();
-    //viewer->resetCamera();
+
 }
 
 
