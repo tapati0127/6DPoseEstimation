@@ -17,8 +17,11 @@ MainWindow::MainWindow(QWidget *parent) :
 //    motoudp->connectMotoman();
 
 
-
-    camera = new Camera(848, 480, 848, 480, 30,ui->lineEditCameraParam->text().toStdString());
+    if(camFile.isNull()||camFile.isEmpty()){
+        cout << "Please set your camera parameters file (.json) " << endl;
+        return;
+    }
+    camera = new Camera(424, 240, 848, 480, 30,ui->lineEditCameraParam->text().toStdString());
     connect(camera, &Camera::framesReady, this, &MainWindow::receiveFrame);
     connect(camera, &Camera::pclReady, this, &MainWindow::receivePcl);
     connect(camera, &Camera::pointCloudReady, this, &MainWindow::receivePointCloud);
@@ -30,19 +33,22 @@ MainWindow::MainWindow(QWidget *parent) :
     viewer = new pclViewer(ui->qvtkWidget);
     viewer_ = new pclViewer(ui->qvtkWidgetModel);
 
+
     servo = new ServoControl();
 
-
+    if(modelPath.isNull()||modelPath.isEmpty()){
+        cout << "Please set your model file (.ply) " << endl;
+        return;
+    }
     ppf = new PPF(modelPath.toStdString());
     ppf->start();
     connect(ppf,&PPF::complete,this,&MainWindow::readyPPFStatus);
-    cv::Matx44d mat(0.02518456169,  0.9961177387,  -0.0843515765,  0.2652645862,
-                    0.9991963621,  -0.02245054794,  0.03320546554,  -0.2020528898,
-                    0.03118281413,  -0.08512005347,  -0.9958826279,  0.1593551343,
-                    0,  0,  0,  1);
-    calib_pose = mat;
+    if(yoloPath.isNull()||yoloPath.isEmpty()){
+        cout << "Please set your Yolo config path (include .cfg .weights .names) " << endl;
+        return;
+    }
+    yolo = new Yolo(yoloPath.toStdString());
 
-//    Convert::saveMatFile(mat,"/home/tapati/calib");
 
 }
 
@@ -52,7 +58,40 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::receiveFrame(QImage rgb, QImage depth)
+void MainWindow::choosePointCloud(const vector<Yolo::yoloResult> & results,const Mat& depth_image,const rs2_intrinsics& instrict, Mat &mat)
+{
+    if(results.size()==0) return;
+    vector<cv::Mat> roi;
+    vector<float> depth_medium;
+    roi.resize(results.size());
+    depth_medium.resize(results.size());
+    for (size_t i=0;i<results.size();i++) {
+        int sum=0;
+        depth_medium.at(i)=0;
+        roi.at(i).create(results.at(i).pixW*results.at(i).pixH, 3, CV_32FC1);
+        for(int j=results.at(i).y;j<results.at(i).y+results.at(i).pixH;j++){
+            for(int k=results.at(i).x;k<results.at(i).x+results.at(i).pixW;k++){
+                if(depth_image.at<uint16_t>(j,k)>0){
+                    float z = depth_image.at<uint16_t>(j,k)*1e-5;//depth unit = 1e-5
+//                    cout << z << " ";
+                    //instrict.fx fy ppx ppy
+                    roi.at(i).at<float>(sum,0) =  (float)(k-instrict.ppx)*z/instrict.fx;
+                    roi.at(i).at<float>(sum,1) = (float)(j-instrict.ppy)*z/instrict.fy;
+                    roi.at(i).at<float>(sum,2) = z;
+                    depth_medium.at(i) += roi.at(i).at<float>(sum,2);
+                    sum++;
+                }
+            }
+        }
+      depth_medium.at(i) *= 1/sum;
+      roi.at(i).resize(sum);
+    }
+    mat = roi.at(std::distance(depth_medium.begin(),std::min_element(depth_medium.begin(), depth_medium.end())));
+
+
+}
+
+void MainWindow::receiveFrame(QImage rgb)
 {
     ui->labelImage->setPixmap(QPixmap::fromImage(rgb).scaled(ui->labelImage->size().width(),ui->labelImage->size().height(),Qt::KeepAspectRatio));
     QString sizeString = QString("(%1,%2)").arg(ui->labelImage->size().width()).arg(ui->labelImage->size().height());
@@ -65,13 +104,37 @@ void MainWindow::receivePcl(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pointcloud)
     viewer->displayPCL(pointcloud);
 }
 
-void MainWindow::receivePointCloud(cv::Mat pointcloud)
+void MainWindow::receivePointCloud(cv::Mat depth_image,cv::Mat rgb_image)
 {
     if(isTrigger){
         if(isReady){
             ppf_match_3d::Pose3DPtr result;
+
+            vector<struct Yolo::yoloResult> results;
+            yolo->computeYolo(rgb_image,results);
+            cv::Mat input;
+            choosePointCloud(results,depth_image,camera->inrist,input);
+            writePLY(input,"testYolo.ply");
             cv::Mat pc;
-            ppf->caculatePPF(pointcloud,result,pc);
+            if(input.rows==0) {
+                isTrigger = false;
+                ui->radioButtonTrigger->setChecked(false);
+                ui->radioButtonFail->setChecked(true);
+                return;
+            }
+            if(!ppf->caculatePPF(input,result,pc)){
+                isTrigger = false;
+                ui->radioButtonTrigger->setChecked(false);
+                ui->radioButtonFail->setChecked(true);
+                return;
+            }
+//            if(result->residual>1||result->numVotes<1000){
+//                isTrigger = false;
+//                ui->radioButtonTrigger->setChecked(false);
+//                ui->radioButtonFail->setChecked(true);
+//                return;
+//            }
+
             pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pcl_(new pcl::PointCloud<pcl::PointXYZRGBA>);
             mat2Pcl(pc,pcl_);
 //            Eigen::Affine3f pose;
@@ -118,6 +181,7 @@ void MainWindow::receivePointCloud(cv::Mat pointcloud)
         }
         isTrigger = false;
         ui->radioButtonTrigger->setChecked(false);
+        ui->radioButtonFail->setChecked(false);
     }
 
 }
@@ -160,15 +224,17 @@ void MainWindow::ReadSettings() {
     ui->spinBoxFirstPV->setValue(firstPV);
     firstBV = settings.value("firstBV",40).toInt();
     ui->spinBoxFirstBV->setValue(firstBV);
-    calibFile = settings.value("calibFile",QDir::currentPath()).toString();
+    calibFile = settings.value("calibFile").toString();
     ui->lineEditCalibrationFile->setText(calibFile);
-    camFile = settings.value("camFile",QString("Choose Path")).toString();
+    camFile = settings.value("camFile").toString();
     ui->lineEditCameraParam->setText(camFile);
-    modelPath = settings.value("modelPath",QString("Choose Path")).toString();
+    modelPath = settings.value("modelPath").toString();
     ui->lineEditModelPath->setText(modelPath);
-    jobName = settings.value("jobName",QString("Choose Path")).toString();
+    jobName = settings.value("jobName").toString();
     ui->lineEditJobName->setText(jobName);
     Convert::loadMatFile(calib_pose,calibFile.toStdString());
+    yoloPath = settings.value("yoloPath").toString();
+    ui->lineEditYoloPath->setText(yoloPath);
     //std::cout << calib_pose << std::endl;
 }
 
@@ -184,6 +250,7 @@ void MainWindow::WriteSettings() {
     settings.setValue("camFile",ui->lineEditCameraParam->text());
     settings.setValue("modelPath",ui->lineEditModelPath->text());
     settings.setValue("jobName",ui->lineEditJobName->text());
+    settings.setValue("yoloPath",ui->lineEditYoloPath->text());
 }
 
 void MainWindow::readyCameraStatus()
@@ -312,4 +379,23 @@ void MainWindow::on_pushButtonServoOn_clicked()
         motoudp->triggerTurnOffServo = true;
         ui->pushButtonServoOn->setText("Servo On");
     }
+}
+
+void MainWindow::on_toolButtonYoloPath_clicked()
+{
+    QFileDialog dialog;
+    dialog.setFileMode(QFileDialog::DirectoryOnly);
+    dialog.setOption(QFileDialog::ShowDirsOnly, false);
+    if(dialog.exec()){
+        QString fileName = dialog.directory().path();
+        if(!fileName.isNull()&&!fileName.isEmpty()){
+             ui->lineEditYoloPath->setText(fileName);
+        }
+    }
+}
+
+void MainWindow::on_pushButtonSaveSettings_clicked()
+{
+    WriteSettings();
+    exit(0);
 }

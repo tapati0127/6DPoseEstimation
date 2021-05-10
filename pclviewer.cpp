@@ -34,18 +34,9 @@ pclViewer::pclViewer(QVTKWidget *vtk)
     vtk->SetRenderWindow (viewer->getRenderWindow ());
     viewer->setBackgroundColor(1,1,1);
     viewer->setupInteractor (vtk->GetInteractor (), vtk->GetRenderWindow());
-    viewer->addCoordinateSystem(0.05,"base");
-//    PointT point;
-//    point.x = 0.0; point.y = 0.0; point.z=0.0;point.a=1;
-//    pcl::PointXYZRGB point(0.0,0.0,0.0);
-//    point.x = 0.0;
-//    point.y = 0.0;
-//    point.z = 0.0;
-//    viewer->addText3D("world",point);
-    //viewer->addText("base",0,0);
+    //viewer->addCoordinateSystem(0.05,"base");
     vtk->update ();
-    //viewer->addText3D(std::string("world"),pcl::PointXYZ(0.0,0.0,0.0),1,1,0,0,"b");
-    //vtk->update ();
+
 }
 
 void pclViewer::display()

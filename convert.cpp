@@ -152,6 +152,7 @@ QImage Convert::realsenseFrameToQImage(const rs2::frame &f)
             auto vf = f.as<video_frame>();
             const int w = vf.get_width();
             const int h = vf.get_height();
+            //std::cout << "w " << w << "h " << h << std::endl;
 
             if (f.get_profile().format() == RS2_FORMAT_RGB8)
             {
@@ -209,7 +210,7 @@ int Convert::ViSP2Matx(const vpHomogeneousMatrix &visp_in, Matx44d &mat_ou)
     cv::Mat mat,matd;
     ViSP2Mat(visp_in,mat);
     mat.convertTo(matd,CV_64F);
-    Matx44d temp((double*)mat.ptr());
+    Matx44d temp(matd);
     mat_ou = temp;
 }
 

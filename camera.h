@@ -38,6 +38,8 @@ public:
     void setMaxRange(const int&value){maxRange=value/1000.0;}
     bool camera_running = false;
     bool capture = false;
+    //cv::Mat depth_image;
+    rs2_intrinsics inrist;
 signals:
     void connected();
 private:
@@ -62,9 +64,9 @@ private:
     int captureCount = 0;
 signals:
     // A signal sent by our class to notify that there are frames that need to be processed
-    void framesReady(QImage frameRGB, QImage frameDepth);
+    void framesReady(QImage frameRGB);
     void pclReady(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pointcloud);
-    void pointCloudReady(cv::Mat pointcloud);
+    void pointCloudReady(cv::Mat pointcloud,cv::Mat depth_image);
 private slots:
     void ConnectCamera();
 public slots:

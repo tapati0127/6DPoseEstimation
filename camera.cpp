@@ -68,31 +68,39 @@ void Camera::run()
         // Wait for frames and get them as soon as they are ready
         frames = pipe.wait_for_frames();
         rs2::align align_to_color(RS2_STREAM_COLOR);
-        frames = align_to_color.process(frames);
+        //frames = align_to_color.process(frames);
 
         // Let's get our depth frame
-        rs2::depth_frame depth = frames.get_depth_frame();
-
-        //auto colorized_depth = c.colorize(depth);
-
+        //rs2::depth_frame depth = frames.get_depth_frame();
 
 
         rs2::decimation_filter dec_filter(2);  // Decimation - reduces depth frame density
         rs2::sequence_id_filter seq_filter(2);
         rs2::threshold_filter thres_filter(0.15,maxRange);
         rs2::spatial_filter spat_filter;    // Spatial    - edge-preserving spatial smoothing
-        rs2::temporal_filter temp_filter;   // Temporal   - reduces temporal noi
+        rs2::temporal_filter temp_filter;   // Temporal   - reduces temporal noice
         rs2::disparity_transform depth_to_disparity(true);
         rs2::disparity_transform disparity_to_depth(false);
-        //depth = dec_filter.process(depth);
-        depth = seq_filter.process(depth);
-        depth = thres_filter.process(depth);
-        depth = spat_filter.process(depth);
-        depth = temp_filter.process(depth);
-        //depth = depth_to_disparity.process(depth);
 
+        //frames = dec_filter.process(frames);
+        frames = seq_filter.process(frames);
+        frames = thres_filter.process(frames);
+        frames = depth_to_disparity.process(frames);
+        frames = spat_filter.process(frames);
+        frames = temp_filter.process(frames);
+        frames = disparity_to_depth.process(frames);
+        frames = align_to_color.process(frames);
+        rs2::depth_frame depth = frames.get_depth_frame();
 
-        auto inrist = rs2::video_stream_profile(depth.get_profile()).get_intrinsics();
+        inrist = rs2::video_stream_profile(depth.get_profile()).get_intrinsics();
+//        std::cout << "inrist.fx " << inrist.fx
+//                  << " inrist.fy " << inrist.fy
+//                  << " inrist.ppx " << inrist.ppx
+//                  << " inrist.ppy " << inrist.ppy
+//                  << " inrist.width " << inrist.width
+//                  << " inrist.height " << inrist.height
+//                  << std::endl;
+
         // And our rgb frame
         rs2::frame rgb = frames.get_color_frame();
         rs2::video_frame colorized_depth = rgb.as<rs2::video_frame>();
@@ -100,18 +108,15 @@ void Camera::run()
 
         int stride =colorized_depth.get_stride_in_bytes();
         uint8_t* ptr = (uint8_t*)colorized_depth.get_data();
-        //uint8_t* ptr = (uint8_t*)rgb.get_data();
-        //int stride = rgb.as<rs2::video_frame>().get_stride_in_bytes();
 
         // Let's convert them to QImage
         auto q_rgb = realsenseFrameToQImage(rgb);
-        auto q_depth = realsenseFrameToQImage(depth);
 
         // And finally we'll emit our signal
-        emit framesReady(q_rgb, q_depth);
+        emit framesReady(q_rgb);
 
 
-        cv::Mat pc = cv::Mat(depth.get_height()*depth.get_width(), 3, CV_32FC1);
+        //cv::Mat pc = cv::Mat(depth.get_height()*depth.get_width(), 3, CV_32FC1);
         // Setup the cloud pointer
         // The number of points in the cloud
         pcl->points.resize(depth.get_height()*depth.get_width());
@@ -128,7 +133,7 @@ void Camera::run()
                     P[0] = (float)(x-inrist.ppx)*P[2]/inrist.fx;
                     P[1] = (float)(y-inrist.ppy)*P[2]/inrist.fy;
                     P[2] = P[2];
-                    memcpy(pc.ptr<float>(index),P,sizeof(P));
+                    //memcpy(pc.ptr<float>(index),P,sizeof(P));
                     pcl->points.at(index).x =P[0];
                     pcl->points.at(index).y =P[1];
                     pcl->points.at(index).z =P[2];
@@ -145,12 +150,13 @@ void Camera::run()
 //                }
             }
         }
-        pc.resize(index);
-        cloud = pc;
+        //pc.resize(index);
+        //cloud = pc;
         pcl->points.resize(index);
 
         emit pclReady(pcl);
-        emit pointCloudReady(cloud);
+
+        emit pointCloudReady(Convert::frame_to_mat(depth),Convert::frame_to_mat(rgb));
         if(thread_stop) return;
 
         if(capture){

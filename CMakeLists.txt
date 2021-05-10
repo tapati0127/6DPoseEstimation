@@ -40,7 +40,7 @@ add_executable(6DPoseEstimation
     convert.cpp
     servocontrol.cpp
     ppf.cpp
-    #yolo.cpp
+    yolo.cpp
 )
 #add_library(lib6DPoseEstimation SHARED
 #    mainwindow.ui

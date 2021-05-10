@@ -21,7 +21,7 @@ void HandEyeCalibration::run()
 {
   vpDetectorAprilTag::vpAprilTagFamily tagFamily = vpDetectorAprilTag::TAG_36h11;
   vpDetectorAprilTag::vpPoseEstimationMethod poseEstimationMethod = vpDetectorAprilTag::HOMOGRAPHY_VIRTUAL_VS;
-  double tagSize = 0.021;
+  double tagSize = 0.063;
   float quad_decimate = 1.0;
   int nThreads = 1;
   bool display_tag = false;

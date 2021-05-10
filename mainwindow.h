@@ -10,6 +10,7 @@
 #include "servocontrol.h"
 #include "motoudp.h"
 #include "ppf.h"
+#include "yolo.h"
 namespace Ui {
 class MainWindow;
 }
@@ -21,17 +22,24 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void choosePointCloud(const vector<struct Yolo::yoloResult>&,const cv::Mat&,const rs2_intrinsics&,cv::Mat &);
 public slots:
     // Slot that will receive frames from the camera
-    void receiveFrame(QImage rgb, QImage depth);
+    void receiveFrame(QImage rgb);
     void receivePcl(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pointcloud);
-    void receivePointCloud(cv::Mat pointcloud);
+    void receivePointCloud(cv::Mat pointcloud,cv::Mat depth_image);
     void addCoordinate(Eigen::Affine3f aswer);
     void ReadSettings();
     void WriteSettings();
     void readyCameraStatus();
     void readyPPFStatus();
     void triggerByRobot();
+private slots:
+    void on_pushButtonSaveSettings_clicked();
+
+private slots:
+    void on_toolButtonYoloPath_clicked();
+
 private slots:
     void on_pushButtonServoOn_clicked();
 
@@ -83,6 +91,7 @@ private:
     ServoControl* servo;
     MotoUDP* motoudp;
     PPF* ppf;
+    Yolo* yolo;
     bool isRuntime = true;
 
     QString robotIP;
@@ -92,6 +101,7 @@ private:
     QString calibFile;
     QString camFile;
     QString modelPath;
+    QString yoloPath;
     bool isTrigger = false;
     bool isReady = false;
     bool isCameraRunning = false;

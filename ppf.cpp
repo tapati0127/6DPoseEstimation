@@ -112,13 +112,13 @@ bool PPF::caculatePPF(const Mat &pc, Pose3DPtr &result, Mat &pc_result)
     Mat pc_normal;
     int64 tick1, tick2;
     tick1 = cv::getTickCount();
-    ppf_match_3d::computeNormalsPC3d(pc,pc_normal,10,true,Vec3f(0,0,0));
+    ppf_match_3d::computeNormalsPC3d(pc,pc_normal,5,true,Vec3f(0,0,0));
     tick2 = cv::getTickCount();
     cout << endl << "Normal Estimation Time " <<
          (tick2-tick1)/cv::getTickFrequency() << " sec" << endl;
     tick1 = cv::getTickCount();
     vector<Pose3DPtr> results;
-    detector->match(pc_normal, results, 1.0/5, 0.05);
+    detector->match(pc_normal, results, 1.0/20, 0.05);
     tick2 = cv::getTickCount();
     cout << endl << "PPF Elapsed Time " <<
          (tick2-tick1)/cv::getTickFrequency() << " sec" << endl;
@@ -132,13 +132,13 @@ bool PPF::caculatePPF(const Mat &pc, Pose3DPtr &result, Mat &pc_result)
     }
 
 
-    // Get only first N results - but adjust to results size if num of results are less than that specified by N
-        size_t N = 2;
-        if (results_size < N) {
-            cout << endl << "Reducing matching poses to be reported (as specified in code): "
-                 << N << " to the number of matches found: " << results_size << endl;
-            N = results_size;
-        }
+//    // Get only first N results - but adjust to results size if num of results are less than that specified by N
+        size_t N = 1;
+//        if (results_size < N) {
+//            cout << endl << "Reducing matching poses to be reported (as specified in code): "
+//                 << N << " to the number of matches found: " << results_size << endl;
+//            N = results_size;
+//        }
         vector<Pose3DPtr> resultsSub(results.begin(),results.begin()+N);
 
         // Create an instance of ICP
@@ -154,9 +154,11 @@ bool PPF::caculatePPF(const Mat &pc, Pose3DPtr &result, Mat &pc_result)
              (t2-t1)/cv::getTickFrequency() << " sec" << endl;
         //cout << endl << "There are " << resultsSub.size() << " poses" << endl;
         pc_result = transformPCPose(detector->model, resultsSub.at(0)->pose);
-        cout << "pose " << resultsSub.at(0)->pose << endl;
-        cout << "numVotes " << resultsSub.at(0)->numVotes << endl;
-        cout << "residual " << resultsSub.at(0)->residual << endl;
+//        cout << "pose " << resultsSub.at(0)->pose << endl;
+//        cout << "numVotes " << resultsSub.at(0)->numVotes << endl;
+//        cout << "residual " << resultsSub.at(0)->residual << endl;
+        if(resultsSub.at(0)->residual>1||resultsSub.at(0)->numVotes<1000) return false;
+
         result = resultsSub.at(0);
         return true;
 }
