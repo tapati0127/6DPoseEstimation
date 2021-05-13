@@ -109,6 +109,7 @@ bool PPF::caculatePPF(const Mat &pc, Pose3DPtr &result)
 
 bool PPF::caculatePPF(const Mat &pc, Pose3DPtr &result, Mat &pc_result)
 {
+    cout << "Start matching ...";
     Mat pc_normal;
     int64 tick1, tick2;
     tick1 = cv::getTickCount();
@@ -125,7 +126,7 @@ bool PPF::caculatePPF(const Mat &pc, Pose3DPtr &result, Mat &pc_result)
 
     //check results size from match call above
     size_t results_size = results.size();
-    cout << "Number of matching poses: " << results_size;
+    //cout << "Number of matching poses: " << results_size;
     if (results_size == 0) {
         cout << endl << "No matching poses found. Exiting." << endl;
         return false;
@@ -146,7 +147,7 @@ bool PPF::caculatePPF(const Mat &pc, Pose3DPtr &result, Mat &pc_result)
         int64 t1 = cv::getTickCount();
 
         // Register for all selected poses
-        cout << endl << "Performing ICP on " << N << " poses..." << endl;
+        //cout << endl << "Performing ICP on " << N << " poses..." << endl;
         icp.registerModelToScene(detector->model, pc_normal, resultsSub);
         int64 t2 = cv::getTickCount();
 
@@ -154,9 +155,9 @@ bool PPF::caculatePPF(const Mat &pc, Pose3DPtr &result, Mat &pc_result)
              (t2-t1)/cv::getTickFrequency() << " sec" << endl;
         //cout << endl << "There are " << resultsSub.size() << " poses" << endl;
         pc_result = transformPCPose(detector->model, resultsSub.at(0)->pose);
-//        cout << "pose " << resultsSub.at(0)->pose << endl;
-//        cout << "numVotes " << resultsSub.at(0)->numVotes << endl;
-//        cout << "residual " << resultsSub.at(0)->residual << endl;
+        cout << "pose " << resultsSub.at(0)->pose << endl;
+        cout << "numVotes " << resultsSub.at(0)->numVotes << endl;
+        cout << "residual " << resultsSub.at(0)->residual << endl;
         if(resultsSub.at(0)->residual>1||resultsSub.at(0)->numVotes<1000) return false;
 
         result = resultsSub.at(0);

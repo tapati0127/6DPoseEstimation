@@ -21,7 +21,7 @@ void HandEyeCalibration::run()
 {
   vpDetectorAprilTag::vpAprilTagFamily tagFamily = vpDetectorAprilTag::TAG_36h11;
   vpDetectorAprilTag::vpPoseEstimationMethod poseEstimationMethod = vpDetectorAprilTag::HOMOGRAPHY_VIRTUAL_VS;
-  double tagSize = 0.063;
+  double tagSize = 0.042;
   float quad_decimate = 1.0;
   int nThreads = 1;
   bool display_tag = false;
@@ -289,6 +289,7 @@ void HandEyeCalibration::caculatePose()
        }
        if(vpHandEyeCalibration::calibrate(eMw,cMo,oMe)==0){
            std::cout << " Result oMe " << std::endl << oMe << std::endl;
+           Convert::ViSP2Matx(oMe,this->calib_pose_);
        }
        else{
            std::cout << " Fail " << std::endl;

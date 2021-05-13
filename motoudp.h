@@ -39,13 +39,14 @@ public:
     bool SelectJob(char* jobname);
     bool StartJob();
     bool WriteVarPosition(u_int16_t index, int32_t* pos);
+    bool WriteVarPulse(u_int16_t index, int32_t* pos);
     bool WriteMultipleVarPosition(u_int16_t index,u_int32_t number, int32_t* pos);
     bool ConnectToPLC(QHostAddress host, u_int port,uint16_t adr,uint16_t no_reg,std::vector<uint16_t> data);
     bool WriteByte(u_int16_t instance, uint8_t data);
     bool WriteMultipleBytes(u_int16_t instance,uint32_t number, uint8_t* data);
     bool ReadMultipleBytes(u_int16_t instance,uint32_t number, uint8_t* data);
     bool triggerTurnOnServo = false,triggerTurnOffServo = false,triggerWritePositions = false, triggerStartJob = false;
-    uint8_t ready = 0, running = 0, fail = 0, objectID = 0;
+    uint8_t ready = 0, good = 0, fail = 0, objectID = 0;
     uint8_t trigger, gripperOpenCommand, gripperOpenWidth, PickingDistance;
     int32_t position[12];
 private:

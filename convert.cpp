@@ -189,7 +189,7 @@ void Convert::mat2eigen(const Matx44d &pose, Eigen::Affine3f &eigen_pose)
 
 bool Convert::saveMatFile(const Matx44d &mat, std::string filename){
     // write
-    filename = filename + "/calib.yml";
+    //filename = filename + "/calib.yml";
     FileStorage fs(filename.c_str(), FileStorage::WRITE);
     fs << "calib" << mat;
     fs.release();
@@ -198,7 +198,8 @@ bool Convert::saveMatFile(const Matx44d &mat, std::string filename){
 
 bool Convert::loadMatFile(Matx44d &mat, std::string filename){
     // read
-    filename = filename + "/calib.yml";
+//    filename = filename + "/calib.yml";
+
     FileStorage fs(filename.c_str(), FileStorage::READ);
     fs["calib"] >> mat;
     fs.release();
@@ -274,4 +275,150 @@ cv::Mat Convert::depth_frame_to_meters( const rs2::depth_frame & f )
     dm.convertTo( dm, CV_64F );
     dm = dm * f.get_units();
     return dm;
+}
+
+bool Convert::pulse2Joint(const std::vector<int32_t> &pulse, std::vector<double> &joint)
+{
+    joint.resize(6);
+    if(pulse.size()<6) return false;
+    joint[0] = pulse[0]/(34816/30.0)*M_PI/180;
+    joint[1] = -pulse[1]/(102400/90.0)*M_PI/180;
+    joint[2] = pulse[2]/(51200/90.0)*M_PI/180;
+    joint[3] =  -pulse[3]/(10204/30.0)*M_PI/180;
+    joint[4] =  pulse[4]/(10204/30.0)*M_PI/180;
+    joint[5] =  -pulse[5]/(10204/30.0)*M_PI/180;
+    return true;
+}
+
+bool Convert::joint2Pulse(const std::vector<double> &joint, std::vector<int32_t> &pulse)
+{
+    pulse.resize(6);
+    if(joint.size()<6) return false;
+    pulse[0] = round(joint[0]*(34816/30.0)/(M_PI/180));
+    pulse[1] = round(-joint[1]*(102400/90.0)/(M_PI/180));
+    pulse[2] = round(joint[2]*(51200/90.0)/(M_PI/180));
+    pulse[3] = round(-joint[3]*(10204/30.0)/(M_PI/180));
+    pulse[4] = round(joint[4]*(10204/30.0)/(M_PI/180));
+    pulse[5] = round(-joint[5]*(10204/30.0)/(M_PI/180));
+    return true;
+}
+
+bool Convert::forwardKinematic(const std::vector<double> &joint, Matx44d &pose)
+{
+    if(joint.size()<6) return false;
+    double a1 = 0.02;
+    double a2 = 0.165;
+    double d1 = 0.103;
+    double d4 = 0.165;
+    double d6 = 0.04;
+    std::vector<double> t = joint;
+    t[1] = t[1] + M_PI/2;
+    t[4] = t[4] - M_PI/2;
+    double s1 = sin(t[1]);double c1 = cos(t[1]);
+    double s2 = sin(t[2]);double c2 = cos(t[3]);
+    double s3 = sin(t[2]);double c3 = cos(t[3]);
+    double s4 = sin(t[4]);double c4 = cos(t[4]);
+    double s5 = sin(t[4]);double c5 = cos(t[5]);
+    double s0 = sin(t[0]);double c0 = cos(t[0]);
+    double s12 = sin(t[1]+t[2]);double c12 = cos(t[1]+t[2]);
+    Matx44d result{ s5*(c3*s0 + s3*(c0*s1*s2 - c0*c1*c2)) + c5*(c4*(s0*s3 - c3*(c0*s1*s2 - c0*c1*c2)) - s4*(c0*c1*s2 + c0*c2*s1)), c5*(c3*s0 + s3*(c0*s1*s2 - c0*c1*c2)) - s5*(c4*(s0*s3 - c3*(c0*s1*s2 - c0*c1*c2)) - s4*(c0*c1*s2 + c0*c2*s1)), s4*(s0*s3 - c3*(c0*s1*s2 - c0*c1*c2)) + c4*(c0*c1*s2 + c0*c2*s1), a1*c0 + d4*s12*c0 + a2*c0*c1 + d6*s12*c0*c4 + d6*s0*s3*s4 + d6*c0*c1*c2*c3*s4 - d6*c0*c3*s1*s2*s4,
+                    - s5*(c0*c3 - s3*(s0*s1*s2 - c1*c2*s0)) - c5*(c4*(c0*s3 + c3*(s0*s1*s2 - c1*c2*s0)) + s4*(c1*s0*s2 + c2*s0*s1)), s5*(c4*(c0*s3 + c3*(s0*s1*s2 - c1*c2*s0)) + s4*(c1*s0*s2 + c2*s0*s1)) - c5*(c0*c3 - s3*(s0*s1*s2 - c1*c2*s0)), c4*(c1*s0*s2 + c2*s0*s1) - s4*(c0*s3 + c3*(s0*s1*s2 - c1*c2*s0)), a1*s0 + d4*s12*s0 + a2*c1*s0 + d6*s12*c4*s0 - d6*c0*s3*s4 + d6*c1*c2*c3*s0*s4 - d6*c3*s0*s1*s2*s4,
+                    c5*(c12*s4 + s12*c3*c4) - s12*s3*s5,- s5*(c12*s4 + s12*c3*c4) - s12*c5*s3,s12*c3*s4 - c12*c4,d1 - d4*c12 + a2*s1 + (d6*s12*sin(t[3] + t[4]))/2 - d6*c12*c4 - (d6*sin(t[3] - t[4])*s12)/2,
+                    0,0,0,1
+                  };
+    pose = result;
+    return  true;
+}
+bool jointLimit(std::vector<double> joints){
+    std::vector<double> joint_limit_up{170*M_PI/180,90*M_PI/180,90*M_PI/180,140*M_PI/180,210*M_PI/180,360*M_PI/180}
+                        ,joint_limit_down{-170*M_PI/180,-85*M_PI/180,-50*M_PI/180,-140*M_PI/180,-30*M_PI/180,-360*M_PI/180};
+    for (size_t i=0;i<6;i++) {
+      if(joints.at(i)>joint_limit_up.at(i))
+        return false;
+      if(joints.at(i)<joint_limit_down.at(i))
+        return false;
+    }
+    return true;
+}
+bool Convert::inverseKinematic(const Matx44d &pose, std::vector<double> &joint)
+{
+    double xc,yc,zc;
+      xc = pose(0,3)-0.04*pose(0,2);
+      yc = pose(1,3)-0.04*pose(1,2);
+      zc = pose(2,3)-0.04*pose(2,2);
+      double temp1 = (zc-0.103)*(zc-0.103)-0.165*0.165*2;
+      double temp2 = 2*0.165*0.165;
+
+      double temp;
+      double c3,s3;
+      double c2,s2;
+      double temp3;
+      double temp4;
+      double temp5;
+      double theta[6];
+      temp= sqrt(xc*xc+yc*yc)-0.02;
+      c3 = (temp*temp+temp1)/temp2;
+      temp3=0.165*0.165*2+2*0.165*0.165*c3;
+      temp4=0.165+0.165*c3;
+      joint.resize(6);
+      theta[0]=atan2(yc,xc);
+
+      if(c3>=-1&&c3<=1)
+      {
+        s3=-sqrt(1-c3*c3);
+        theta[2]=atan2(s3,c3);
+        temp5=0.165*s3;
+        c2=(temp*temp4+(zc-0.103)*temp5)/temp3;
+        s2=(-temp*temp5+(zc-0.103)*temp4)/temp3;
+        if(s2>=-1&&s2<=1&&c2>=-1&&c2<=1)
+        {
+          theta[1]=atan2(s2,c2);
+        }
+        else {
+          std::cout << "Cannot find IK" << std::endl;
+          return false;
+        }
+      }
+      else{
+        std::cout << "Cannot find IK" << std::endl;
+        return false;
+      }
+
+      Matx33d R_,R{pose(0,0),pose(0,1),pose(0,2),
+                  pose(1,0),pose(1,1),pose(1,2),
+                  pose(2,0),pose(2,1),pose(2,2)
+                  };
+      double s23 = sin(theta[1] + theta[2]);
+      double c23 = cos(theta[1] + theta[2]);
+      double c1 = cos(theta[0]);
+      double s1 = sin(theta[0]);
+      R_(0,0)=-s23*c1;
+      R_(0,1)=s1;
+      R_(0,2)=c23*c1;
+
+      R_(1,0)=-s23*s1;
+      R_(1,1)=-c1;
+      R_(1,2)=c23*s1;
+
+      R_(2,0)=c23;
+      R_(2,1)=0;
+      R_(2,2)=s23;
+
+      R = R_.t()*R;
+      theta[3] = atan2(-R(1,2),-R(0,2));
+      theta[4] = atan2(-sqrt(R(0,2)*R(0,2)+R(1,2)*R(1,2)),R(2,2));
+      theta[5] = atan2(-R(2,1),+R(2,0));
+
+      joint.at(0)=theta[0];
+      joint.at(1)=-(theta[1]-M_PI/2);
+      joint.at(2) = (theta[2]+M_PI/2);
+      joint.at(3)=-theta[3];
+      joint.at(4)=(theta[4]+M_PI/2);
+      joint.at(5) = -theta[5];
+      if(jointLimit(joint)){
+        return true;
+      }
+      else{
+        return false;
+      }
 }

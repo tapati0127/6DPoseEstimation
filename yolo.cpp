@@ -7,8 +7,8 @@ Yolo::Yolo(string path)
     String modelWeights = path + "/yolov4.weights";
     net = readNetFromDarknet(modelConfiguration, modelWeights);
 
-    //net.setPreferableBackend(DNN_TARGET_OPENCL);
-    net.setPreferableTarget(DNN_TARGET_OPENCL);
+   net.setPreferableBackend(DNN_BACKEND_CUDA);
+    net.setPreferableTarget(DNN_TARGET_CUDA);
 
     string classesFile = "/classes.txt";
     ifstream ifs(classesFile.c_str());
@@ -94,6 +94,9 @@ vector<String> Yolo::getOutputsNames(const Net &net)
 
 void Yolo::computeYolo( Mat &frame, vector<Yolo::yoloResult> &results)
 {
+    int64 tick1, tick2;
+    tick1 = cv::getTickCount();
+
     //imshow("test",frame);
     Mat blob;
     // Create a 4D blob from a frame.
@@ -108,5 +111,9 @@ void Yolo::computeYolo( Mat &frame, vector<Yolo::yoloResult> &results)
 
     // Remove the bounding boxes with low confidence
     postprocess(frame, outs,results);
+    tick2 = cv::getTickCount();
+    cout << "YOLO detected " << results.size() << " result(s) in "
+         << (double)(tick2 - tick1) / cv::getTickFrequency()
+         << " sec" << endl;
 
 }

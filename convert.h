@@ -14,6 +14,7 @@
 using namespace cv;
 namespace Convert
 {
+
 Mat eulerAnglesToRotationMatrix(Vec3f &theta);
 bool isRotationMatrix(Mat &R);
 Vec3f rotationMatrixToEulerAngles(Mat &R);
@@ -34,6 +35,10 @@ bool saveMatFile(const Mat&mat, std::string filename);
 bool loadMatFile(Mat &mat, std::string filename);
 cv::Mat frame_to_mat(const rs2::frame& f);
 cv::Mat depth_frame_to_meters( const rs2::depth_frame & f);
+bool pulse2Joint(const std::vector<int32_t> &pulse,std::vector<double> &joint);
+bool joint2Pulse(const std::vector<double> &joint,std::vector<int32_t> &pulse);
+bool forwardKinematic(const std::vector<double> &joint, Matx44d &pose);
+bool inverseKinematic(const Matx44d &pose, std::vector<double> &joint);
 }
 
 

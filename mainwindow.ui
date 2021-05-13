@@ -520,12 +520,12 @@
                </widget>
               </item>
               <item>
-               <widget class="QRadioButton" name="radioButtonRunning">
+               <widget class="QRadioButton" name="radioButtonGood">
                 <property name="enabled">
                  <bool>false</bool>
                 </property>
                 <property name="text">
-                 <string>Running</string>
+                 <string>Good</string>
                 </property>
                 <property name="checkable">
                  <bool>true</bool>

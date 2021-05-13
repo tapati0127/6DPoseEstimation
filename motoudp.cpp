@@ -39,7 +39,7 @@ void MotoUDP::run()
         }
         uint8_t bufferWrite[4];
         bufferWrite[0] = ready;
-        bufferWrite[1] = running;
+        bufferWrite[1] = good;
         bufferWrite[2] = fail;
         bufferWrite[3] = objectID;
         if(!WriteMultipleBytes(36,4,bufferWrite)){
@@ -47,6 +47,8 @@ void MotoUDP::run()
         }
         if(triggerWritePositions){
             WriteMultipleVarPosition(32,2,position);
+            WriteByte(40,1);
+            WriteByte(40,0);
             triggerWritePositions = false;
         }
         else{
@@ -422,6 +424,42 @@ bool MotoUDP::MotoUDP::WriteVarPosition(u_int16_t index, int32_t* pos)
   else {
       return false;
   }
+}
+
+bool MotoUDP::WriteVarPulse(u_int16_t index, int32_t *pos)
+{
+    TxData sent_data;
+    sent_data.id = 07;
+    sent_data.command_no = 0x7f;
+    sent_data.instance = index;
+    sent_data.attribute = 0;
+    sent_data.service = 0x10;
+    TxDataWriteVariablePosition position;
+    sent_data.data_size = sizeof (position);
+    position.data_type = 0;
+    position.first_axis_position = pos[0];
+    position.second_axis_position = pos[1];
+    position.third_axis_position = pos[2];
+    position.fourth_axis_position = pos[3];
+    position.fifth_axis_position = pos[4];
+    position.sixth_axis_position = pos[5];
+    char buffer[sizeof(sent_data)+ sizeof (position)];
+    memcpy(buffer,&sent_data,sizeof (sent_data));
+    memcpy(buffer+sizeof(sent_data),&position,sizeof(position));
+    SendData(buffer,sizeof(sent_data)+ sizeof (position));
+    usleep(30000);
+    if(client->pendingDatagramSize()>0){
+        QByteArray array;
+        RxData rxHeader;
+        array.resize(client->pendingDatagramSize());
+        client->readDatagram(array.data(),array.size());
+        memcpy(&rxHeader,array.data(),32);
+        if(rxHeader.status!=0) return false;
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 bool MotoUDP::WriteMultipleVarPosition(u_int16_t index, u_int32_t number, int32_t *pos)
 {

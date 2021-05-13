@@ -31,7 +31,7 @@ public:
     void receivedPosition(int32_t* pos);
     void caculatePose();
     void test();
-    Matx44d calib_pose;
+    Matx44d calib_pose,calib_pose_;
 signals:
     // A signal sent by our class to notify that there are frames that need to be processed
     void framesReady(QImage frameRGB, QImage frameDepth);

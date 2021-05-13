@@ -21,6 +21,7 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
+    void init();
     ~MainWindow();
     void choosePointCloud(const vector<struct Yolo::yoloResult>&,const cv::Mat&,const rs2_intrinsics&,cv::Mat &);
 public slots:
@@ -105,7 +106,7 @@ private:
     bool isTrigger = false;
     bool isReady = false;
     bool isCameraRunning = false;
-    cv::Matx44d calib_pose;
+    cv::Matx44d calib_pose,calib_pose_;
 
 };
 

@@ -67,7 +67,7 @@ void Camera::run()
     {
         // Wait for frames and get them as soon as they are ready
         frames = pipe.wait_for_frames();
-        rs2::align align_to_color(RS2_STREAM_COLOR);
+        rs2::align align_to_color(RS2_STREAM_DEPTH);
         //frames = align_to_color.process(frames);
 
         // Let's get our depth frame
