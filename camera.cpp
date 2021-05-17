@@ -20,7 +20,7 @@ void Camera::ConnectCamera(){
         cfg.enable_stream(RS2_STREAM_COLOR, rgb_width, rgb_height, RS2_FORMAT_RGB8, fps);
 
 
-        auto pro = pipe.start();
+        auto pro = pipe.start(cfg);
         rs2::device dev = pro.get_device();
         auto advanced_mode_dev = dev.as<rs400::advanced_mode>();
         std::ifstream file(cameraFile);
@@ -67,22 +67,17 @@ void Camera::run()
     {
         // Wait for frames and get them as soon as they are ready
         frames = pipe.wait_for_frames();
-        rs2::align align_to_color(RS2_STREAM_DEPTH);
-        //frames = align_to_color.process(frames);
-
-        // Let's get our depth frame
-        //rs2::depth_frame depth = frames.get_depth_frame();
-
+        rs2::align align_to_color(RS2_STREAM_COLOR);
 
         rs2::decimation_filter dec_filter(2);  // Decimation - reduces depth frame density
         rs2::sequence_id_filter seq_filter(2);
-        rs2::threshold_filter thres_filter(0.15,maxRange);
+        rs2::threshold_filter thres_filter(minRange,maxRange);
         rs2::spatial_filter spat_filter;    // Spatial    - edge-preserving spatial smoothing
         rs2::temporal_filter temp_filter;   // Temporal   - reduces temporal noice
         rs2::disparity_transform depth_to_disparity(true);
         rs2::disparity_transform disparity_to_depth(false);
 
-        //frames = dec_filter.process(frames);
+        frames = dec_filter.process(frames);
         frames = seq_filter.process(frames);
         frames = thres_filter.process(frames);
         frames = depth_to_disparity.process(frames);
@@ -143,20 +138,21 @@ void Camera::run()
 
                     index++;
                 }
-//                else{
-//                    ptr[y * stride + (3*x)]=255;
-//                    ptr[y * stride + (3*x) + 1]=255;
-//                    ptr[y * stride + (3*x) + 2] = 255;
-//                }
             }
         }
         //pc.resize(index);
         //cloud = pc;
         pcl->points.resize(index);
+        if(!isBlock){
+            emit pclReady(pcl);
+            depth_image = Convert::frame_to_mat(depth);
+            depth_image = depth_image.clone();
+//            imshow("depth_video",depth_image);
+            rgb_image = Convert::frame_to_mat(rgb);
+            rgb_image = rgb_image.clone();
+            emit pointCloudReady();
+        }
 
-        emit pclReady(pcl);
-
-        emit pointCloudReady(Convert::frame_to_mat(depth),Convert::frame_to_mat(rgb));
         if(thread_stop) return;
 
         if(capture){
@@ -170,9 +166,9 @@ void Camera::run()
             Mat depth16 = Convert::frame_to_mat(depth);
             //cv::imshow("depth",depth16);
             cv::imwrite(png_depth,depth16);
-            name = "capture/pointcloud" + std::to_string(captureCount);
-            std::string ply = name + ".ply";
-            ppf_match_3d::writePLY(cloud,ply.c_str());
+//            name = "capture/pointcloud" + std::to_string(captureCount);
+//            std::string ply = name + ".ply";
+//            ppf_match_3d::writePLY(cloud,ply.c_str());
             captureCount++;
             capture = false;
         }

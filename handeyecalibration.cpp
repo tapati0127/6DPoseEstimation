@@ -157,21 +157,13 @@ void HandEyeCalibration::run()
                    double confidence_index;
                    if (vpPose::computePlanarObjectPoseFromRGBD(depthMap, tags_corners[i], cam, tags_points3d[i], cMo_, &confidence_index)) {
                          if (confidence_index > 0.5) {
-                             cv::Mat test;
+
                              vpDisplay::displayFrame(I_color2, cMo_, cam, tagSize/2, vpColor::none, 3);
-                             ViSP2Mat(cMo_,test);
+
                              if(trigger){
                              int32_t pos[6];
-                             if(motoudp->GetPosition(pos)){
+                             if(motoudp->GetPulsePosition(pos)){
                                  receivedPosition(pos);
-                                 R_target2cam.push_back(test.rowRange(0,3).colRange(0,3));
-                                 t_target2cam.push_back(test.rowRange(0,3).col(3));
-
-//                                 if(t_target2cam.size()>=2){
-//                                     std::cout << "Translation " << norm(t_target2cam.at(t_target2cam.size()-1)-t_target2cam.at(t_target2cam.size()-2));
-//                                 }
-
-                                 //pose_target2cam.push_back(cMo);
                                  this->cMo.push_back(cMo_);
                                  std::cout << "Added cMo_ pose "<< std::endl<< cMo_ << std::endl;
                                  isReceivePositionFromRobot = false;
@@ -200,7 +192,7 @@ void HandEyeCalibration::run()
                if(trigger){
                    trigger = false;
                    int32_t pos[6];
-                   if(motoudp->GetPosition(pos)){
+                   if(motoudp->GetPulsePosition(pos)){
                        receivedPosition(pos);}
                    else{
                        std::cout << "Check connection with robot" << std::endl;
@@ -227,53 +219,36 @@ void HandEyeCalibration::receivedPosition(int32_t*pos)
 {
 
     float position[6];
-    position[0]=float(*pos)/1000000;
-    position[1]=float(*(pos+1))/1000000;
-    position[2]=float(*(pos+2))/1000000;
-    position[3]=float(*(pos+3))/10000*M_PI/180;
-    position[4]=float(*(pos+4))/10000*M_PI/180;
-    position[5]=float(*(pos+5))/10000*M_PI/180;
-    cv::Mat position_vector = cv::Mat(3,1, CV_32F, position);
-    cv::Vec3f temp(position[3],position[4],position[5]);
-    std::cout << "ori " << temp*180/M_PI << std::endl;
-    cv::Mat rotation_matrix;
-    cv::Mat pose(4,4, CV_32F);
-    rotation_matrix = eulerAnglesToRotationMatrix(temp);
-    //std::cout << rotation_matrix*180.0/M_PI << std::endl;
-    rtToPose(rotation_matrix,position_vector,pose);
-    //std::cout << "rotation_matrix " << std::endl << rotation_matrix << std::endl;
-
+    std::vector<int32_t> pulse(6);
+    std::vector<double> joint(6);
+    std::memcpy(pulse.data(),pos,6*4);
+    std::cout << "pulse " << pulse[5];
+    Convert::pulse2Joint(pulse,joint);
+    cv::Matx44d pose;
+    Convert::forwardKinematic(joint,pose);
+    std::cout << "wMe pose " << std::endl << pose << std::endl;
     pose = pose.inv();
-    R_base2gripper.push_back(pose.colRange(0,3).rowRange(0,3));
-    t_base2gripper.push_back(pose.col(3).rowRange(0,3));
 
-//    if(t_base2gripper.size()>=2){
-//        std::cout << "Translation " << norm(t_base2gripper.at(t_base2gripper.size()-1)-t_base2gripper.at(t_base2gripper.size()-2));
-//    }
 
     vpHomogeneousMatrix pose_;
-    Mat2ViSP(pose,pose_);
+    Convert::Matx2ViSP(pose_,pose);
 
     eMw.push_back(pose_);
-    std::cout << "eMw pose " << std::endl << pose << std::endl;
+
     isReceivePositionFromRobot = true;
 
-//    Eigen::Affine3f eigen_pose;
-//    Eigen::Matrix4d matrix_pose;
-//    vp::visp2eigen(pose_.inverse(),matrix_pose);
-//    eigen_pose.matrix() = matrix_pose.cast<float>();
-//    Q_EMIT finishCalibrate(eigen_pose);
+
 }
 
 void HandEyeCalibration::caculatePose()
 {
     if(eMw.size()>=3&&cMo.size()>=3){
-       cv::calibrateHandEye(R_base2gripper,t_base2gripper,R_target2cam,t_target2cam,R_cam2base,t_cam2base,cv::CALIB_HAND_EYE_PARK);
-       //wMc.eye();
+//       cv::calibrateHandEye(R_base2gripper,t_base2gripper,R_target2cam,t_target2cam,R_cam2base,t_cam2base,cv::CALIB_HAND_EYE_PARK);
+//       //wMc.eye();
        int ret = vpHandEyeCalibration::calibrate(cMo,eMw,wMc);
-       std::cout << "***OPENCV***" << std::endl;
-       std::cout << R_cam2base << std::endl;
-       std::cout << t_cam2base << std::endl << std::endl;
+//       std::cout << "***OPENCV***" << std::endl;
+//       std::cout << R_cam2base << std::endl;
+//       std::cout << t_cam2base << std::endl << std::endl;
        if(ret==0){
            std::cout << "***VISP***" << std::endl;
            std::cout << wMc << std::endl;

@@ -295,11 +295,11 @@ bool Convert::joint2Pulse(const std::vector<double> &joint, std::vector<int32_t>
     pulse.resize(6);
     if(joint.size()<6) return false;
     pulse[0] = round(joint[0]*(34816/30.0)/(M_PI/180));
-    pulse[1] = round(-joint[1]*(102400/90.0)/(M_PI/180));
+    pulse[1] = round(joint[1]*(102400/90.0)/(M_PI/180));
     pulse[2] = round(joint[2]*(51200/90.0)/(M_PI/180));
-    pulse[3] = round(-joint[3]*(10204/30.0)/(M_PI/180));
+    pulse[3] = round(joint[3]*(10204/30.0)/(M_PI/180));
     pulse[4] = round(joint[4]*(10204/30.0)/(M_PI/180));
-    pulse[5] = round(-joint[5]*(10204/30.0)/(M_PI/180));
+    pulse[5] = round(joint[5]*(10204/30.0)/(M_PI/180));
     return true;
 }
 
@@ -311,21 +311,34 @@ bool Convert::forwardKinematic(const std::vector<double> &joint, Matx44d &pose)
     double d1 = 0.103;
     double d4 = 0.165;
     double d6 = 0.04;
-    std::vector<double> t = joint;
-    t[1] = t[1] + M_PI/2;
-    t[4] = t[4] - M_PI/2;
-    double s1 = sin(t[1]);double c1 = cos(t[1]);
-    double s2 = sin(t[2]);double c2 = cos(t[3]);
-    double s3 = sin(t[2]);double c3 = cos(t[3]);
-    double s4 = sin(t[4]);double c4 = cos(t[4]);
-    double s5 = sin(t[4]);double c5 = cos(t[5]);
-    double s0 = sin(t[0]);double c0 = cos(t[0]);
-    double s12 = sin(t[1]+t[2]);double c12 = cos(t[1]+t[2]);
-    Matx44d result{ s5*(c3*s0 + s3*(c0*s1*s2 - c0*c1*c2)) + c5*(c4*(s0*s3 - c3*(c0*s1*s2 - c0*c1*c2)) - s4*(c0*c1*s2 + c0*c2*s1)), c5*(c3*s0 + s3*(c0*s1*s2 - c0*c1*c2)) - s5*(c4*(s0*s3 - c3*(c0*s1*s2 - c0*c1*c2)) - s4*(c0*c1*s2 + c0*c2*s1)), s4*(s0*s3 - c3*(c0*s1*s2 - c0*c1*c2)) + c4*(c0*c1*s2 + c0*c2*s1), a1*c0 + d4*s12*c0 + a2*c0*c1 + d6*s12*c0*c4 + d6*s0*s3*s4 + d6*c0*c1*c2*c3*s4 - d6*c0*c3*s1*s2*s4,
-                    - s5*(c0*c3 - s3*(s0*s1*s2 - c1*c2*s0)) - c5*(c4*(c0*s3 + c3*(s0*s1*s2 - c1*c2*s0)) + s4*(c1*s0*s2 + c2*s0*s1)), s5*(c4*(c0*s3 + c3*(s0*s1*s2 - c1*c2*s0)) + s4*(c1*s0*s2 + c2*s0*s1)) - c5*(c0*c3 - s3*(s0*s1*s2 - c1*c2*s0)), c4*(c1*s0*s2 + c2*s0*s1) - s4*(c0*s3 + c3*(s0*s1*s2 - c1*c2*s0)), a1*s0 + d4*s12*s0 + a2*c1*s0 + d6*s12*c4*s0 - d6*c0*s3*s4 + d6*c1*c2*c3*s0*s4 - d6*c3*s0*s1*s2*s4,
-                    c5*(c12*s4 + s12*c3*c4) - s12*s3*s5,- s5*(c12*s4 + s12*c3*c4) - s12*c5*s3,s12*c3*s4 - c12*c4,d1 - d4*c12 + a2*s1 + (d6*s12*sin(t[3] + t[4]))/2 - d6*c12*c4 - (d6*sin(t[3] - t[4])*s12)/2,
-                    0,0,0,1
-                  };
+
+    double t1 = joint[0];
+    double t2 = joint[1]+M_PI/2;
+    double t3 = joint[2];
+    double t4 = joint[3];
+    double t5 = joint[4]-M_PI/2;
+    double t6 = joint[5];
+
+//    std::vector<double> t = joint;
+//    t[1] = t[1] + M_PI/2;
+//    t[4] = t[4] - M_PI/2;
+//    double s1 = sin(t[1]);double c1 = cos(t[1]);
+//    double s2 = sin(t[2]);double c2 = cos(t[2]);
+//    double s3 = sin(t[3]);double c3 = cos(t[3]);
+//    double s4 = sin(t[4]);double c4 = cos(t[4]);
+//    double s5 = sin(t[5]);double c5 = cos(t[5]);
+//    double s0 = sin(t[0]);double c0 = cos(t[0]);
+//    double s12 = sin(t[1]+t[2]);double c12 = cos(t[1]+t[2]);
+//    Matx44d result{ s5*(c3*s0 + s3*(c0*s1*s2 - c0*c1*c2)) + c5*(c4*(s0*s3 - c3*(c0*s1*s2 - c0*c1*c2)) - s4*(c0*c1*s2 + c0*c2*s1)), c5*(c3*s0 + s3*(c0*s1*s2 - c0*c1*c2)) - s5*(c4*(s0*s3 - c3*(c0*s1*s2 - c0*c1*c2)) - s4*(c0*c1*s2 + c0*c2*s1)), s4*(s0*s3 - c3*(c0*s1*s2 - c0*c1*c2)) + c4*(c0*c1*s2 + c0*c2*s1), a1*c0 + d4*s12*c0 + a2*c0*c1 + d6*s12*c0*c4 + d6*s0*s3*s4 + d6*c0*c1*c2*c3*s4 - d6*c0*c3*s1*s2*s4,
+//                    - s5*(c0*c3 - s3*(s0*s1*s2 - c1*c2*s0)) - c5*(c4*(c0*s3 + c3*(s0*s1*s2 - c1*c2*s0)) + s4*(c1*s0*s2 + c2*s0*s1)), s5*(c4*(c0*s3 + c3*(s0*s1*s2 - c1*c2*s0)) + s4*(c1*s0*s2 + c2*s0*s1)) - c5*(c0*c3 - s3*(s0*s1*s2 - c1*c2*s0)), c4*(c1*s0*s2 + c2*s0*s1) - s4*(c0*s3 + c3*(s0*s1*s2 - c1*c2*s0)), a1*s0 + d4*s12*s0 + a2*c1*s0 + d6*s12*c4*s0 - d6*c0*s3*s4 + d6*c1*c2*c3*s0*s4 - d6*c3*s0*s1*s2*s4,
+//                    c5*(c12*s4 + s12*c3*c4) - s12*s3*s5,- s5*(c12*s4 + s12*c3*c4) - s12*c5*s3,s12*c3*s4 - c12*c4,d1 - d4*c12 + a2*s1 + (d6*s12*sin(t[3] + t[4]))/2 - d6*c12*c4 - (d6*sin(t[3] - t[4])*s12)/2,
+//                    0,0,0,1
+//                  };
+    Matx44d result{   sin(t6)*(cos(t4)*sin(t1) + sin(t4)*(cos(t1)*sin(t2)*sin(t3) - cos(t1)*cos(t2)*cos(t3))) + cos(t6)*(cos(t5)*(sin(t1)*sin(t4) - cos(t4)*(cos(t1)*sin(t2)*sin(t3) - cos(t1)*cos(t2)*cos(t3))) - sin(t5)*(cos(t1)*cos(t2)*sin(t3) + cos(t1)*cos(t3)*sin(t2))), cos(t6)*(cos(t4)*sin(t1) + sin(t4)*(cos(t1)*sin(t2)*sin(t3) - cos(t1)*cos(t2)*cos(t3))) - sin(t6)*(cos(t5)*(sin(t1)*sin(t4) - cos(t4)*(cos(t1)*sin(t2)*sin(t3) - cos(t1)*cos(t2)*cos(t3))) - sin(t5)*(cos(t1)*cos(t2)*sin(t3) + cos(t1)*cos(t3)*sin(t2))), sin(t5)*(sin(t1)*sin(t4) - cos(t4)*(cos(t1)*sin(t2)*sin(t3) - cos(t1)*cos(t2)*cos(t3))) + cos(t5)*(cos(t1)*cos(t2)*sin(t3) + cos(t1)*cos(t3)*sin(t2)), a1*cos(t1) + d4*sin(t2 + t3)*cos(t1) + a2*cos(t1)*cos(t2) + d6*sin(t2 + t3)*cos(t1)*cos(t5) + d6*sin(t1)*sin(t4)*sin(t5) + d6*cos(t1)*cos(t2)*cos(t3)*cos(t4)*sin(t5) - d6*cos(t1)*cos(t4)*sin(t2)*sin(t3)*sin(t5),
+     - sin(t6)*(cos(t1)*cos(t4) - sin(t4)*(sin(t1)*sin(t2)*sin(t3) - cos(t2)*cos(t3)*sin(t1))) - cos(t6)*(cos(t5)*(cos(t1)*sin(t4) + cos(t4)*(sin(t1)*sin(t2)*sin(t3) - cos(t2)*cos(t3)*sin(t1))) + sin(t5)*(cos(t2)*sin(t1)*sin(t3) + cos(t3)*sin(t1)*sin(t2))), sin(t6)*(cos(t5)*(cos(t1)*sin(t4) + cos(t4)*(sin(t1)*sin(t2)*sin(t3) - cos(t2)*cos(t3)*sin(t1))) + sin(t5)*(cos(t2)*sin(t1)*sin(t3) + cos(t3)*sin(t1)*sin(t2))) - cos(t6)*(cos(t1)*cos(t4) - sin(t4)*(sin(t1)*sin(t2)*sin(t3) - cos(t2)*cos(t3)*sin(t1))), cos(t5)*(cos(t2)*sin(t1)*sin(t3) + cos(t3)*sin(t1)*sin(t2)) - sin(t5)*(cos(t1)*sin(t4) + cos(t4)*(sin(t1)*sin(t2)*sin(t3) - cos(t2)*cos(t3)*sin(t1))), a1*sin(t1) + d4*sin(t2 + t3)*sin(t1) + a2*cos(t2)*sin(t1) + d6*sin(t2 + t3)*cos(t5)*sin(t1) - d6*cos(t1)*sin(t4)*sin(t5) + d6*cos(t2)*cos(t3)*cos(t4)*sin(t1)*sin(t5) - d6*cos(t4)*sin(t1)*sin(t2)*sin(t3)*sin(t5),
+                                                                                                                                                                    cos(t6)*(cos(t2 + t3)*sin(t5) + sin(t2 + t3)*cos(t4)*cos(t5)) - sin(t2 + t3)*sin(t4)*sin(t6),                                                                                                                                                            - sin(t6)*(cos(t2 + t3)*sin(t5) + sin(t2 + t3)*cos(t4)*cos(t5)) - sin(t2 + t3)*cos(t6)*sin(t4),                                                                                                   sin(t2 + t3)*cos(t4)*sin(t5) - cos(t2 + t3)*cos(t5),                                                                                  d1 - d4*cos(t2 + t3) + a2*sin(t2) + (d6*sin(t2 + t3)*sin(t4 + t5))/2 - d6*cos(t2 + t3)*cos(t5) - (d6*sin(t4 - t5)*sin(t2 + t3))/2,
+                                                                                                                                                                                                                                                               0,                                                                                                                                                                                                                                                         0,                                                                                                                                                     0,                                                                                                                                                                                                                  1};
+
     pose = result;
     return  true;
 }
@@ -421,4 +434,17 @@ bool Convert::inverseKinematic(const Matx44d &pose, std::vector<double> &joint)
       else{
         return false;
       }
+}
+
+int Convert::Matx2ViSP(vpHomogeneousMatrix &visp_out, const Matx44d &mat_in)
+{
+    int ret = 0;
+    for (int i=0; i<mat_in.rows; i++)
+    {
+      for (int j=0; j<mat_in.cols; j++)
+      {
+        visp_out[i][j] = mat_in(i,j);  // new memory is created and data is copied in this line
+      }
+    }
+    return ret;
 }

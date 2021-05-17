@@ -22,6 +22,7 @@ QImage vispToQImage(const vpImage<vpRGBa> &f);
 int Mat2ViSP(const cv::Mat& mat_in, vpHomogeneousMatrix& visp_ou);
 int ViSP2Mat(const vpHomogeneousMatrix& visp_in, cv::Mat& mat_ou);
 int ViSP2Matx(const vpHomogeneousMatrix& visp_in, cv::Matx44d& mat_ou);
+int Matx2ViSP( vpHomogeneousMatrix& visp_out,const cv::Matx44d& mat_in);
 cv::Mat qImageToMat(QImage im);
 QImage matToQImage(cv::Mat &mat);
 void rtToPose(const Mat& R, const Mat& t, Mat& Pose);

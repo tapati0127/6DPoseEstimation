@@ -42,38 +42,48 @@ void MotoUDP::run()
         bufferWrite[1] = good;
         bufferWrite[2] = fail;
         bufferWrite[3] = objectID;
-        if(!WriteMultipleBytes(36,4,bufferWrite)){
+        if(!WriteByte(36,ready)){
             usleep(3000000);
         }
         if(triggerWritePositions){
-            WriteMultipleVarPosition(32,2,position);
-            WriteByte(40,1);
-            WriteByte(40,0);
+//            WriteVarPulse(32,position);
+//            usleep(500000);
+//            WriteVarPulse(33,position+6);
+            std::cout << "triggerWritePositions ";
+
+            std::cout << WriteMultipleVarInt(32,12,position);
+            usleep(100000);
+            WriteByte(38,fail);
+            std::cout << " fail " << int(fail);
+            usleep(10000);
+            WriteByte(37,good);
+            std::cout << " good " << int(good);
+            good = 0;
+            WriteByte(37,good);
+            std::cout << " good " << int(good) << std::endl;
             triggerWritePositions = false;
         }
-        else{
-            usleep(3000000);
+        if(triggerDone){
+            WriteByte(38,fail);
+            std::cout << " fail " << int(fail);
+            std::cout << " good " << int(good);
+            WriteByte(37,good);
+            good = 0;
+            WriteByte(37,good);
+            std::cout << " good " << int(good) << std::endl;
+            triggerDone = false;
         }
         if(triggerTurnOnServo){
             TurnOnServo();
             triggerTurnOnServo = false;
         }
-        else{
-            usleep(3000000);
-        }
         if(triggerTurnOffServo){
             TurnOffServo();
             triggerTurnOffServo = false;
         }
-        else{
-            usleep(3000000);
-        }
         if(triggerStartJob){
             StartJob();
             triggerStartJob = false;
-        }
-        else{
-            usleep(3000000);
         }
     }
 }
@@ -503,6 +513,84 @@ bool MotoUDP::WriteMultipleVarPosition(u_int16_t index, u_int32_t number, int32_
         return false;
     }
 }
+
+bool MotoUDP::WriteMultipleVarInt(u_int16_t index, u_int32_t number, int32_t *value)
+{
+    TxData sent_data;
+    sent_data.id = 100;
+    sent_data.command_no = 0x304;
+    sent_data.instance = index;
+    sent_data.attribute = 0;
+    sent_data.service = 0x34;
+    sent_data.data_size = 4 + number*4;
+    char buffer [sizeof(sent_data)+ 4 + number*4];
+    memcpy(buffer,&sent_data,sizeof (sent_data));
+    memcpy(buffer+sizeof(sent_data),&number,4);
+    memcpy(buffer+sizeof(sent_data)+4,value,number*4);
+
+    SendData(buffer,sent_data.header_size+sent_data.data_size);
+    usleep(30000);
+    if(client->pendingDatagramSize()>0){
+        QByteArray array;
+        RxData rxHeader;
+        array.resize(client->pendingDatagramSize());
+        client->readDatagram(array.data(),array.size());
+        memcpy(&rxHeader,array.data(),32);
+        if(rxHeader.status!=0)
+        {
+            std::cout << "Status Code Writing Multiple Double Ints " << std::hex << rxHeader.added_status << std::endl;
+            return false;
+        }
+        return true;
+    }
+    else {
+         std::cout << "Cannot connect to the controller!" << std::endl;
+        return false;
+    }
+}
+
+bool MotoUDP::WriteMultipleVarPulse(u_int16_t index, u_int32_t number, int32_t *pos)
+{
+    TxData sent_data;
+    sent_data.id = 07;
+    sent_data.command_no = 0x307;
+    sent_data.instance = index;
+    sent_data.attribute = 0;
+    sent_data.service = 0x34;
+
+    char buffer[4+sizeof(sent_data)+ sizeof (TxDataWriteVariablePosition)*number];
+    sent_data.data_size = sizeof(TxDataWriteVariablePosition)*number+4;
+
+    for (int i = 0;i<number;i++) {
+        TxDataWriteVariablePosition position;
+        position.data_type = 0;
+        position.first_axis_position = pos[6*i];
+        position.second_axis_position = pos[6*i+1];
+        position.third_axis_position = pos[6*i+2];
+        position.fourth_axis_position = pos[6*i+3];
+        position.fifth_axis_position = pos[6*i+4];
+        position.sixth_axis_position = pos[6*i+5];
+        memcpy(buffer+sizeof(sent_data)+sizeof(position)*i+4,&position,sizeof(position));
+    }
+    memcpy(buffer,&sent_data,sizeof (sent_data));
+    memcpy(buffer+sizeof (sent_data),&number,sizeof (number));
+    //std::cout << buffer << std::endl;
+    SendData(buffer,sent_data.header_size+sent_data.data_size);
+    usleep(40000);
+    if(client->pendingDatagramSize()>0){
+        QByteArray array;
+        RxData rxHeader;
+        array.resize(client->pendingDatagramSize());
+        client->readDatagram(array.data(),array.size());
+        memcpy(&rxHeader,array.data(),32);
+        if(rxHeader.status!=0){std::cout << "Multiple Pulse Variable Status Code " << std::hex << rxHeader.added_status  << std::endl; return false;}
+        return true;
+    }
+    else {
+        std::cout << "Cannot connect to the controller!"  << std::endl;
+        return false;
+    }
+}
 bool MotoUDP::MotoUDP::SelectJob(char* jobname){
   TxData sent_data;
   sent_data.id = RECEIVE_TYPE::JOB_SELLECT;
@@ -604,10 +692,14 @@ bool MotoUDP::MotoUDP::WriteByte(u_int16_t instance,uint8_t data){
       array.resize(client->pendingDatagramSize());
       client->readDatagram(array.data(),array.size());
       memcpy(&rxHeader,array.data(),32);
-      if(rxHeader.status!=0) return false;
+      if(rxHeader.status!=0) {
+          std::cout << "Write Byte Status Code " << std::hex << rxHeader.added_status  << std::endl;
+          return false;
+      }
       return true;
   }
   else {
+      std::cout << "Cannot connect to the controller!"  << std::endl;
       return false;
   }
 }

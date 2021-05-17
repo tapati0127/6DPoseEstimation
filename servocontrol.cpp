@@ -48,14 +48,20 @@ uint16_t ServoControl::WriteServo(uint16_t value)
     char buffer_req[8],buffer_res[8];
     memcpy(buffer_req,&req,8);
     std::cout << "Write " << serialPort.write(buffer_req,8) << std::endl;
-    usleep(10000);
-    serialPort.read(buffer_res,8);
-    memcpy(&res,buffer_res,8);
-    std::cout << "Receive " << res.header << " " << res.command << " " << res.error << " " << res.crc << std::endl;
-    if(res.error==4){
-        serialPort.write(buffer_req,8);
-        usleep(10000);
+    //usleep(10000);
+    serialPort.setReadBufferSize(8);
+    if(serialPort.waitForReadyRead(100)){
         serialPort.read(buffer_res,8);
+        memcpy(&res,buffer_res,8);
+        std::cout << "Receive " << res.header << " " << res.command << " " << res.error << " " << res.crc << std::endl;
+        if(res.error==4){
+            serialPort.write(buffer_req,8);
+            usleep(50000);
+            serialPort.read(buffer_res,8);
+        }
+        return  res.error;
     }
-    return  res.error;
+    else{
+        return  5;
+    }
 }
