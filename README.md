@@ -4,8 +4,8 @@ This repos is the implementation of our paper: "6D Pose Estimation for Robot in 
 Watch our demo: https://www.youtube.com/watch?v=11uhnISUyXQ&ab_channel=D%C5%A9ngHu%E1%BB%B3nh%C4%90%E1%BB%A9c  
 It consists of 3 parts:
 * Object detection with YOLOv4 + 6D pose estimation with Point Pair Feature (PPF) + pose refinement with Iterative Closest Point (ICP).
-* Object grasping: Communicatation with Motoman Motomini Robot, Gripper + Grasping Program.
-* GUI for our software, which makes easier for users.
+* Object grasping: Communication with Motoman Motomini Robot, Gripper + Grasping Program.
+* GUI for our software, which makes it easier for users.
 
 ### Built With
 
@@ -21,5 +21,5 @@ It consists of 3 parts:
 
 ### Prerequisites
 * Download all requirements.
-* Note: In OpenCV, please download contrib modules and replace Surface Matching module by our customized one in: https://github.com/tapati0127/surface_matching and rebuild this module again.
+* Note: In OpenCV, please download contrib modules and replace Surface Matching module with our customized one in: https://github.com/tapati0127/surface_matching and rebuild this module again.
 
